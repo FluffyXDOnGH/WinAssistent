@@ -334,6 +334,7 @@ window.app.onSettings((config) => {
   renderProfile();
   destinations = [...(config.destinations || [])];
   renderDestinations();
+  window.refreshSelectMenus();
   updateActivityLabel();
   if (!initialTabShown) {
     showTab('general');
@@ -375,6 +376,7 @@ document.getElementById('import-profile').onclick = async () => {
     customSlots = result.slots;
     programs = result.programs;
     profile.value = 'custom';
+    window.refreshSelectMenus();
     renderProfile();
     showToast(t('Profil importiert. Zum Anwenden speichern.'), 'info');
   } else {

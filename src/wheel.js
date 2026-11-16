@@ -487,5 +487,5 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') window.app.close();
 });
 document.addEventListener('pointerdown', (event) => {
-  if (!event.target.closest('.segment,.quick-panel')) window.app.close();
+  if (!event.target.closest('.segment,.quick-panel,.select-menu')) window.app.close();
 });
