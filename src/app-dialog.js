@@ -1,7 +1,7 @@
 const path = require('node:path');
 const { BrowserWindow, ipcMain } = require('electron');
 
-function createAppDialog(iconPath, getLanguage = () => 'de') {
+function createAppDialog(iconPath, getLanguage = () => 'en') {
   const queue = [];
   let active = null;
 

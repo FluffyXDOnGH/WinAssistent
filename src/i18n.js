@@ -4,7 +4,7 @@ const dictionaries = {
 };
 
 function language(value) {
-  return Object.hasOwn(dictionaries, value) ? value : 'de';
+  return Object.hasOwn(dictionaries, value) ? value : 'en';
 }
 
 function translate(locale, key, values = {}) {

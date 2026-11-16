@@ -12,14 +12,13 @@ const updateCheck = document.getElementById('update-check');
 let updateState = { phase: 'unconfigured', version: '', progress: 0, error: '' };
 function renderUpdateState(state) {
   updateState = state;
-  const active = ['available', 'downloading', 'downloaded', 'error'].includes(state.phase);
+  const active = ['available', 'downloading', 'downloaded'].includes(state.phase);
   updateIndicator.hidden = !active;
   if (!active) updatePopover.hidden = true;
   updateIndicator.setAttribute('aria-expanded', String(!updatePopover.hidden));
   updateIndicator.title = t(state.phase === 'downloaded' ? 'Update bereit' : 'Update verfügbar');
   updateIndicator.setAttribute('aria-label', updateIndicator.title);
   updateIndicator.classList.toggle('downloading', state.phase === 'downloading');
-  updateIndicator.classList.toggle('update-error', state.phase === 'error');
   document.getElementById('update-version').textContent = state.version
     ? t('Version {version}', { version: state.version })
     : '';
@@ -29,11 +28,11 @@ function renderUpdateState(state) {
   const status = {
     unconfigured: 'Update-Prüfung noch nicht eingerichtet.',
     checking: 'Suche nach Updates …',
-    idle: 'Du verwendest die aktuelle Version.',
+    idle: 'Auf dem neuesten Stand.',
     available: 'Eine neue Version ist verfügbar.',
     downloading: 'Update wird heruntergeladen …',
     downloaded: 'Update bereit zur Installation.',
-    error: 'Update konnte nicht geladen werden.',
+    error: 'Updateprüfung fehlgeschlagen. Bitte später erneut versuchen.',
   };
   const message = state.error || status[state.phase] || status.unconfigured;
   document.getElementById('update-general-status').textContent = t(message);
@@ -43,16 +42,12 @@ function renderUpdateState(state) {
   const percent = Math.max(0, Math.min(100, Number(state.progress) || 0));
   progress.setAttribute('aria-valuenow', String(percent));
   document.getElementById('update-progress-fill').style.width = `${percent}%`;
-  updateButton.hidden = !['available', 'downloaded', 'error'].includes(state.phase);
+  updateButton.hidden = !['available', 'downloaded'].includes(state.phase);
   updateButton.textContent = t(
-    state.phase === 'downloaded'
-      ? 'Installieren und neu starten'
-      : state.phase === 'error'
-        ? 'Erneut versuchen'
-        : 'Herunterladen',
+    state.phase === 'downloaded' ? 'Installieren und neu starten' : 'Herunterladen',
   );
   updateCheck.hidden = state.phase === 'unconfigured';
-  updateCheck.disabled = ['checking', 'downloading'].includes(state.phase);
+  updateCheck.disabled = ['checking', 'downloading', 'downloaded'].includes(state.phase);
 }
 updateCheck.onclick = async () => {
   updateCheck.disabled = true;

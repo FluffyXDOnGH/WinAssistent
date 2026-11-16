@@ -1565,23 +1565,24 @@ h2 {
   color: rgb(var(--c));
 }
 .titlebar-controls .update-indicator {
-  color: #70d99b;
+  color: #62dca0;
   font-size: 17px;
 }
 .titlebar-controls .update-indicator:hover {
-  color: #a2f0bf;
-  background: #70d99b1c;
+  color: #85edb5;
+  background: transparent;
+}
+.titlebar-controls .update-indicator i {
+  display: inline-block;
+  animation: update-cue 2.6s ease-in-out infinite;
 }
 .titlebar-controls .update-indicator.downloading i {
-  display: inline-block;
-  animation: update-pulse 1.5s ease-in-out infinite;
+  animation-duration: 1.4s;
 }
-.titlebar-controls .update-indicator.update-error {
-  color: #e9ad68;
-}
-@keyframes update-pulse {
+@keyframes update-cue {
   50% {
-    opacity: 0.45;
+    transform: translateY(-2px);
+    filter: drop-shadow(0 0 5px #62dca070);
   }
 }
 .update-popover {
@@ -1665,7 +1666,7 @@ h2 {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .titlebar-controls .update-indicator.downloading i {
+  .titlebar-controls .update-indicator i {
     animation: none;
   }
 }

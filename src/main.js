@@ -70,6 +70,15 @@ let renameInProgress = false;
 let gesture = null;
 const updateState = { phase: 'unconfigured', version: '', progress: 0, error: '' };
 let updateTask = null;
+const updateCheckFailed = 'Updateprüfung fehlgeschlagen. Bitte später erneut versuchen.';
+const updateDownloadFailed = 'Download fehlgeschlagen. Bitte erneut versuchen.';
+
+function noPublishedRelease(error) {
+  return (
+    error?.code === 'ERR_UPDATER_NO_PUBLISHED_VERSIONS' ||
+    error?.message?.includes('No published versions on GitHub')
+  );
+}
 
 function setUpdateState(phase, changes = {}) {
   Object.assign(updateState, { phase, ...changes });
@@ -94,7 +103,14 @@ function startUpdates() {
   autoUpdater.on('update-downloaded', (info) =>
     setUpdateState('downloaded', { version: info.version, progress: 100, error: '' }),
   );
-  autoUpdater.on('error', (error) => setUpdateState('error', { error: error.message }));
+  autoUpdater.on('error', (error) => {
+    if (noPublishedRelease(error)) {
+      setUpdateState('idle', { version: '', error: '' });
+      return;
+    }
+    const message = updateState.phase === 'downloading' ? updateDownloadFailed : updateCheckFailed;
+    setUpdateState('error', { error: message });
+  });
   setUpdateState('idle');
   setTimeout(() => checkForUpdates(), 10000).unref();
   setInterval(() => checkForUpdates(), 6 * 60 * 60 * 1000).unref();
@@ -109,8 +125,13 @@ function checkForUpdates() {
     .checkForUpdates()
     .then(() => ({ ok: true }))
     .catch((error) => {
-      setUpdateState('error', { error: error.message });
-      return { ok: false, error: error.message };
+      if (noPublishedRelease(error)) {
+        setUpdateState('idle', { version: '', error: '' });
+        return { ok: true };
+      }
+      console.error('Update check failed:', error);
+      setUpdateState('error', { error: updateCheckFailed });
+      return { ok: false, error: updateCheckFailed };
     })
     .finally(() => {
       updateTask = null;
@@ -132,8 +153,9 @@ async function updateAction(action) {
       .downloadUpdate()
       .then(() => ({ ok: true }))
       .catch((error) => {
-        setUpdateState('error', { error: error.message });
-        return { ok: false, error: error.message };
+        console.error('Update download failed:', error);
+        setUpdateState('error', { error: updateDownloadFailed });
+        return { ok: false, error: updateDownloadFailed };
       })
       .finally(() => {
         updateTask = null;
@@ -152,12 +174,11 @@ async function updateAction(action) {
 }
 
 const configPath = () => path.join(app.getPath('userData'), 'settings.json');
-const iconPath = path.join(__dirname, '..', 'assets', 'logo-app.png');
-const trayIconPath = path.join(__dirname, '..', 'assets', 'logo-rounded.ico');
-const appDialog = createAppDialog(iconPath, () => config?.language || 'de');
+const iconPath = path.join(__dirname, '..', 'assets', 'logo-rounded.ico');
+const appDialog = createAppDialog(iconPath, () => config?.language || 'en');
 const programIcons = new Map();
 const programIconRequests = new Map();
-const tr = (key, values) => translate(config?.language || 'de', key, values);
+const tr = (key, values) => translate(config?.language || 'en', key, values);
 const numberLocale = () => (config?.language === 'en' ? 'en-US' : 'de-DE');
 
 function programIcon(file) {
@@ -411,6 +432,13 @@ function openSettings() {
       nodeIntegration: false,
     },
   });
+  if (process.platform === 'win32') {
+    settingsWindow.setAppDetails({
+      appId: 'de.winassistent.app',
+      appIconPath: app.isPackaged ? process.execPath : iconPath,
+      appIconIndex: 0,
+    });
+  }
   settingsWindow.loadFile(path.join(__dirname, 'settings.html'));
   settingsWindow.once('ready-to-show', () => settingsWindow.show());
   settingsWindow.webContents.on('did-finish-load', () => {
@@ -810,7 +838,7 @@ if (hasSingleInstanceLock)
     startHook();
     mouseBridge.setEnabled(config.enabled);
     mouseBridge.setPauseInFullscreen(config.pauseInFullscreen);
-    tray = new Tray(trayIconPath);
+    tray = new Tray(iconPath);
     tray.setToolTip('WinAssistent');
     updateTrayMenu();
     startUpdates();

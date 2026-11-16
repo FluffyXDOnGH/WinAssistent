@@ -45,7 +45,7 @@ Das **Custom-Profil** lässt alle acht Richtungen einzeln belegen. Eigene `.exe`
 
 Custom-Profile lassen sich als JSON-Datei exportieren oder importieren. Der Export enthält auch die EXE-Pfade, Arbeitsordner und Argumente der eigenen Programme; Hotkey und Schnellablageziele sind nicht enthalten. Ältere Profil-Dateien bleiben importierbar. Nach einem Import wird das Profil erst mit **Speichern** aktiv.
 
-Unter **Allgemein → Sprache** stehen Deutsch und Englisch zur Wahl. Die Sprache wird mit den Einstellungen gespeichert und gilt für Einstellungen, Aktionsrad, Tray und die WinAssistent-Dialoge. Die Textdateien liegen in `locales/de.json` und `locales/en.json`.
+Unter **Allgemein → Sprache** stehen Deutsch und Englisch zur Wahl. Englisch ist bei neuen Installationen voreingestellt; eine bereits gespeicherte Sprachwahl bleibt erhalten. Die Sprache gilt für Einstellungen, Aktionsrad, Tray und die WinAssistent-Dialoge. Die Textdateien liegen in `locales/de.json` und `locales/en.json`.
 
 Der Update-Bereich zeigt die aktuelle Version und bietet eine manuelle Prüfung. Ein installierter Release-Build prüft beim Start und danach alle sechs Stunden auf GitHub nach Updates, einschließlich Beta-Versionen. Bei einer neuen Version erscheint das Symbol in der Titelleiste. Download und Installation werden dort vom Benutzer gestartet. Der normale Entwicklungs-Build (`npm run dist`) enthält noch keine Release-Quelle; dafür wird `npm run release:build` mit dem GitHub-Repository benötigt. Installer, passende Blockmap und `latest.yml` müssen zusammen veröffentlicht werden. `scripts/clean-dist.js` bewahrt diese Dateien für die aktuelle Version auf.
 

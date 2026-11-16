@@ -1,9 +1,9 @@
 const { contextBridge, ipcRenderer } = require('electron');
 const dictionaries = ipcRenderer.sendSync('translations');
-let currentLanguage = 'de';
+let currentLanguage = 'en';
 contextBridge.exposeInMainWorld('app', {
   setLanguage: (value) => {
-    currentLanguage = Object.hasOwn(dictionaries, value) ? value : 'de';
+    currentLanguage = Object.hasOwn(dictionaries, value) ? value : 'en';
   },
   t: (key, values = {}) => {
     const text = dictionaries[currentLanguage][key] ?? dictionaries.de[key] ?? key;
