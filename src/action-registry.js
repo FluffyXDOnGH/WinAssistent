@@ -1,5 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const isSupportedImage = (file) =>
+  ['.jpg', '.jpeg', '.png'].includes(path.extname(file).toLowerCase());
 
 const DEFAULT_SLOTS = Object.freeze([
   'terminal',
@@ -170,6 +172,24 @@ const ACTIONS = Object.freeze({
     category: 'app',
     context: 'any',
   },
+  'image-tools': {
+    id: 'image-tools',
+    label: 'Bilder',
+    icon: 'bi-images',
+    description: 'Bilder zum Teilen vorbereiten oder als PDF speichern',
+    category: 'files',
+    context: 'images',
+    submenu: 'images',
+  },
+  'recent-folders': {
+    id: 'recent-folders',
+    label: 'Zielordner',
+    icon: 'bi-folder-symlink',
+    description: 'Gespeicherte und offene Ordner direkt öffnen',
+    category: 'files',
+    context: 'any',
+    submenu: 'destinations',
+  },
 });
 
 const CUSTOM_ACTION_IDS = Object.freeze([
@@ -189,6 +209,8 @@ const CUSTOM_ACTION_IDS = Object.freeze([
   'copy-names',
   'properties',
   'run-admin',
+  'image-tools',
+  'recent-folders',
 ]);
 
 const PROGRAM_ID = /^program:[0-9a-f-]{36}$/i;
@@ -299,6 +321,12 @@ function availability(action, context) {
   if (action.context === 'project' && !context.projectRoot) {
     return { available: false, reason: 'Kein Projektordner erkannt' };
   }
+  if (
+    action.context === 'images' &&
+    (!context.selected.length || !context.selected.every(isSupportedImage))
+  ) {
+    return { available: false, reason: 'JPG- oder PNG-Bilder auswählen' };
+  }
   if (action.context === 'selection' && (!context.folder || !context.selected.length)) {
     return { available: false, reason: 'Zuerst eine Datei oder einen Ordner auswählen' };
   }
@@ -325,7 +353,13 @@ function availability(action, context) {
 
 function wheelActions(profiles, context) {
   const normalized = normalizeProfiles(profiles);
-  return normalized.layouts[normalized.active].map((slot) => {
+  const images = context.selected.length > 0 && context.selected.every(isSupportedImage);
+  const slots = [...normalized.layouts[normalized.active]];
+  if (normalized.active === 'default' && !context.loading) {
+    if (images) slots[1] = 'image-tools';
+    if (!context.selected.length) slots[5] = 'recent-folders';
+  }
+  return slots.map((slot) => {
     const program = normalized.programs.find((item) => item.id === slot);
     const action = program
       ? {

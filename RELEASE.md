@@ -2,7 +2,7 @@
 
 The source repository is public. Installers and update metadata belong in [GitHub Releases](https://github.com/mambuzrrr/WinAssistent/releases), not in Git. Release builds use this repository as their update source. A fork can set `WINASSISTENT_GITHUB_REPO=owner/repo` when building.
 
-## Before the first beta
+## Pre-release checks
 
 1. Test installation, startup, the tray, keyboard shortcut, `Alt` + right-click, and uninstallation on a second Windows 11 PC.
 2. Review tracked files and Git history for private data and verify that build output is excluded.

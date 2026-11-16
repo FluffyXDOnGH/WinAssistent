@@ -4,13 +4,14 @@ WinAssistent puts the actions you use most within reach of your cursor. Open the
 
 The wheel adapts to its context. It can open a terminal in the current folder, copy file details, calculate a SHA-256 hash, compare files, or send a selection to a saved destination. You can arrange eight actions around the wheel, choose a ready-made profile, and add your own programs.
 
-> **Status:** WinAssistent is in beta. The source is public; the first downloadable release will appear on the [Releases page](https://github.com/mambuzrrr/WinAssistent/releases) when it is ready.
+> **Status:** WinAssistent is in beta. Download the current Windows installer from the [Releases page](https://github.com/mambuzrrr/WinAssistent/releases). Changes on `main` may not yet be included in the latest installer.
 
 ## At a glance
 
 - **Open it anywhere:** Use `Ctrl+Alt+Space` or `Alt` + right-click. A short click leaves the wheel open; hold and drag at least 60 px toward an action to select it on release.
 - **Work with files:** Copy names, paths, and details; calculate or verify SHA-256; compare two files; inspect folder size; find duplicate files; batch rename with a preview; and check which processes lock a file.
 - **Move things quickly:** Copy or move selections to saved, open, or recent folders. Cancellable transfers show progress and handle name collisions.
+- **Prepare images:** Create share-sized JPG/PNG copies, or combine selected images into a PDF. The original files stay in place.
 - **Keep your tools close:** Launch a terminal in the current folder, open Windows utilities, or run your own EXE with configured arguments and working directory. Custom program icons appear in the wheel.
 - **Make it yours:** Choose Standard, Developer, or Gamer, or build a Custom wheel with eight actions. Developer actions can recognize a project root from common project files.
 - **Stay out of the way:** The app runs in the notification area. You can pause the wheel, disable the mouse gesture in full-screen apps, and adjust the interface scale.
@@ -19,7 +20,7 @@ Actions that need a file selection are unavailable when WinAssistent cannot iden
 
 ## Getting started
 
-WinAssistent requires Windows 11. Once an installer is published, download it from the [official Releases page](https://github.com/mambuzrrr/WinAssistent/releases). The installer creates Start Menu and desktop shortcuts. Double-click the tray icon to open settings; the tray menu also lets you open the wheel, pause it, or quit.
+WinAssistent requires Windows 11. Download the installer from the [official Releases page](https://github.com/mambuzrrr/WinAssistent/releases). The installer creates Start Menu and desktop shortcuts. Double-click the tray icon to open settings; the tray menu also lets you open the wheel, pause it, or quit.
 
 To run the source locally, install Node.js, npm, and the Visual Studio C++ build tools, then run:
 
@@ -34,6 +35,8 @@ The native module is built during setup. To rebuild it explicitly, run `npm run 
 
 **General** contains the wheel toggle, activation options, interface scale, language, quick destinations, and update controls. **Action wheel** contains profile selection and the eight slots. Standard, Developer, and Gamer are ready to use; Custom lets you assign each direction and add programs.
 
+In the Standard profile, an image selection brings image tools into the wheel. With no selection, the destination slot opens saved and currently open Explorer folders directly. When images are combined into a PDF, the selection order shown in the wheel becomes the page order.
+
 English is the default for new installations. German is also available. Your selected language is preserved when you update.
 
 Profiles can be exported to and imported from JSON. An export includes custom program paths, arguments, and working directories, so review it before sharing. Importing a profile does not change your hotkey or quick destinations. Save the imported profile to apply it.
@@ -42,7 +45,7 @@ Profiles can be exported to and imported from JSON. An export includes custom pr
 
 Installed release builds check GitHub Releases for updates at startup and periodically afterward. When a newer version is available, a green update icon appears in the title bar. You can also check, download, and install from settings. Development builds started with `npm start` do not use the release feed.
 
-The first public release has not been published yet. Until then, the installed version is shown without an update prompt.
+The updater shows a prompt only when a newer published version is available.
 
 ## Building
 

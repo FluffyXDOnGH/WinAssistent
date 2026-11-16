@@ -27,6 +27,7 @@ const {
   findDuplicates,
 } = require('./feature-actions');
 const { renamePlan, applyRenamePlan } = require('./rename-actions');
+const { prepareForSharing, imagesToPdf } = require('./image-actions');
 const { createAppDialog } = require('./app-dialog');
 const { loadConfig, writeConfig, DEFAULT_HOTKEY } = require('./config');
 const { dictionaries, language, translate } = require('./i18n');
@@ -609,12 +610,25 @@ async function quickFile(mode, index) {
 async function perform(id, payload) {
   if (typeof id !== 'string') throw new Error('Unbekannte Aktion.');
   if (id.startsWith('quick:')) {
-    const match = /^quick:(copy|move):(\d+)$/.exec(id);
+    const match = /^quick:(copy|move|open):(\d+)$/.exec(id);
     if (!match) throw new Error('Unbekannte Aktion.');
+    if (match[1] === 'open') {
+      if (
+        !allowedAction('recent-folders', config.profiles, context) &&
+        !allowedAction('quick', config.profiles, context)
+      ) {
+        throw new Error('Diese Aktion ist hier nicht verfügbar.');
+      }
+      const destination = wheelPayload(context).destinations[Number(match[2])];
+      if (!destination) throw new Error('Ungültiger Zielordner.');
+      hideWheel();
+      await openTarget(destination.path);
+      return true;
+    }
     return quickFile(match[1], Number(match[2]));
   }
 
-  const submenu = /^(folders|copy|files|windows|project|gaming):([a-z0-9.-]+)$/.exec(id);
+  const submenu = /^(folders|copy|files|windows|project|gaming|images):([a-z0-9.-]+)$/.exec(id);
   if (submenu) {
     const [, group, command] = submenu;
     const parent = {
@@ -624,12 +638,33 @@ async function perform(id, payload) {
       windows: 'windows-tools',
       project: 'project-tools',
       gaming: 'gaming-tools',
+      images: 'image-tools',
     }[group];
     if (!allowedAction(parent, config.profiles, context))
       throw new Error('Diese Aktion ist hier nicht verfügbar.');
     const selected = context.selected;
     const folder = context.folder;
-    if (group === 'folders' && command === 'collect') {
+    if (group === 'images' && command === 'share') {
+      const files = [...selected];
+      hideWheel();
+      const created = await prepareForSharing(files, Number(payload) || 1600);
+      await appDialog.show({
+        type: 'success',
+        title: 'Fürs Teilen vorbereitet',
+        message: tr('{count} Bilder erstellt', { count: created.length }),
+        detail: created.join('\n'),
+      });
+    } else if (group === 'images' && command === 'pdf') {
+      const files = [...selected];
+      hideWheel();
+      const created = await imagesToPdf(files);
+      await appDialog.show({
+        type: 'success',
+        title: 'PDF erstellt',
+        message: path.basename(created),
+        detail: created,
+      });
+    } else if (group === 'folders' && command === 'collect') {
       await collectSelection(
         selectedFolder(),
         selected,

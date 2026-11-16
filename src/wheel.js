@@ -16,6 +16,14 @@ function formatBytes(bytes) {
   return `${(bytes / 1024 ** (unit + 1)).toLocaleString(document.documentElement.lang === 'en' ? 'en-US' : 'de-DE', { maximumFractionDigits: 1 })} ${units[unit]}`;
 }
 const menus = {
+  images: {
+    title: 'Bilder',
+    hint: 'Neue Dateien entstehen neben den Originalen.',
+    items: [
+      ['images:share', 'Fürs Teilen vorbereiten', 'bi-image', 'images'],
+      ['images:pdf', 'Bilder als PDF', 'bi-file-earmark-pdf', 'image-pair'],
+    ],
+  },
   folders: {
     title: 'Auswahl bündeln',
     hint: 'Markierte Elemente in einem neuen Ordner zusammenfassen.',
@@ -145,7 +153,13 @@ function addMenuButton(id, label, icon, requirement) {
     (requirement === 'file' && !current.selectedIsFile) ||
     (requirement === 'pair' && current.selected.length !== 2) ||
     (requirement === 'multiple' && current.selected.length < 2) ||
-    (requirement === 'exe' && current.type !== '.exe');
+    (requirement === 'exe' && current.type !== '.exe') ||
+    (requirement === 'images' &&
+      (!current.selected.length ||
+        !current.selected.every((file) => /\.(jpe?g|png)$/i.test(file)))) ||
+    (requirement === 'image-pair' &&
+      (current.selected.length < 2 ||
+        !current.selected.every((file) => /\.(jpe?g|png)$/i.test(file))));
   row.onclick = async () => {
     if (id === 'files:rename') {
       activePanel = 'rename';
@@ -158,7 +172,11 @@ function addMenuButton(id, label, icon, requirement) {
       return;
     }
     const name =
-      id === 'folders:collect' ? document.getElementById('folder-name')?.value : undefined;
+      id === 'folders:collect'
+        ? document.getElementById('folder-name')?.value
+        : id === 'images:share'
+          ? Number(document.getElementById('image-size')?.value)
+          : undefined;
     row.disabled = true;
     if (!(await window.app.action(id, name))) row.disabled = false;
   };
@@ -284,6 +302,25 @@ function renderPanel() {
     return;
   }
   if (menu) {
+    if (activePanel === 'images') {
+      const preview = document.createElement('div');
+      preview.className = 'image-preview';
+      preview.textContent = current.selected
+        .map((file, index) => `${index + 1}. ${file.split(/[\\/]/).at(-1)}`)
+        .join('\n');
+      list.append(preview);
+      const size = document.createElement('select');
+      size.id = 'image-size';
+      size.className = 'folder-name';
+      for (const edge of [1200, 1600, 2048]) {
+        const option = document.createElement('option');
+        option.value = edge;
+        option.textContent = t('Maximal {count} px', { count: edge });
+        option.selected = edge === 1600;
+        size.append(option);
+      }
+      list.append(size);
+    }
     if (activePanel === 'folders') {
       const input = document.createElement('input');
       input.id = 'folder-name';
@@ -305,6 +342,11 @@ function renderPanel() {
     name.textContent = `${folder.split(/[\\/]/).filter(Boolean).at(-1) || folder} · ${t(entry.kind)}`;
     name.title = folder;
 
+    const open = document.createElement('button');
+    open.innerHTML = '<i class="bi bi-box-arrow-up-right"></i>';
+    open.title = t('Ordner öffnen');
+    open.onclick = () => window.app.action(`quick:open:${index}`);
+
     const copy = document.createElement('button');
     copy.innerHTML = '<i class="bi bi-copy"></i>';
     copy.title = t('Nach {folder} kopieren', { folder });
@@ -323,7 +365,7 @@ function renderPanel() {
       transferState?.phase === 'progress';
     move.onclick = () => window.app.action(`quick:move:${index}`);
 
-    row.append(name, copy, move);
+    row.append(name, open, copy, move);
     list.append(row);
   });
 

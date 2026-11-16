@@ -1419,6 +1419,15 @@ h2 {
 .folder-name:focus {
   border-color: rgb(var(--c) / 0.55);
 }
+.image-preview {
+  max-height: 70px;
+  overflow: auto;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+  line-height: 1.5;
+  color: rgb(var(--c) / 0.68);
+}
 .hash-label {
   display: block;
   margin-top: 8px;
