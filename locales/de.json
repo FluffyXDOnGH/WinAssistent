@@ -296,5 +296,18 @@
   "No free output name was found.": "Kein freier Dateiname für das Ergebnis gefunden.",
   "Invalid image size.": "Ungültige Bildgröße.",
   "Cannot open one of the selected images.": "Eines der ausgewählten Bilder konnte nicht geöffnet werden.",
-  "Select at least two images.": "Mindestens zwei Bilder auswählen."
+  "Select at least two images.": "Mindestens zwei Bilder auswählen.",
+  "Dateien mit Vorschau umbenennen": "Dateien mit Vorschau umbenennen",
+  "Größe und Inhalt der Auswahl prüfen": "Größe und Inhalt der Auswahl prüfen",
+  "Identische Dateien in der Auswahl finden": "Identische Dateien in der Auswahl finden",
+  "Prüfsumme der gewählten Datei kopieren": "Prüfsumme der gewählten Datei kopieren",
+  "Prozesse mit Zugriff auf die Datei anzeigen": "Prozesse mit Zugriff auf die Datei anzeigen",
+  "Genau eine Datei auswählen": "Genau eine Datei auswählen",
+  "Nur normale Dateien umbenennen": "Nur normale Dateien umbenennen",
+  "Ungültige Bildreihenfolge.": "Ungültige Bildreihenfolge.",
+  "Neue Dateien neben den Originalen. PDF-Seiten mit den Pfeilen sortieren.": "Neue Dateien neben den Originalen. PDF-Seiten mit den Pfeilen sortieren.",
+  "Nach oben": "Nach oben",
+  "Nach unten": "Nach unten",
+  "Die Belegung passt sich an die Auswahl im Explorer oder auf dem Desktop an.": "Die Belegung passt sich an die Auswahl im Explorer oder auf dem Desktop an.",
+  "Beispiel: eine Datei ausgewählt. Die Belegung passt sich dem Kontext an.": "Beispiel: eine Datei ausgewählt. Die Belegung passt sich dem Kontext an."
 }

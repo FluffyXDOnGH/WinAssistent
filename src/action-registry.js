@@ -190,6 +190,47 @@ const ACTIONS = Object.freeze({
     context: 'any',
     submenu: 'destinations',
   },
+  'bulk-rename': {
+    id: 'bulk-rename',
+    label: 'Massenumbenennung',
+    icon: 'bi-input-cursor-text',
+    description: 'Dateien mit Vorschau umbenennen',
+    category: 'files',
+    context: 'multiple',
+    submenu: 'rename',
+  },
+  'files:size': {
+    id: 'files:size',
+    label: 'Größe der Auswahl',
+    icon: 'bi-pie-chart',
+    description: 'Größe und Inhalt der Auswahl prüfen',
+    category: 'files',
+    context: 'selection',
+  },
+  'files:duplicates': {
+    id: 'files:duplicates',
+    label: 'Duplikate finden',
+    icon: 'bi-layers',
+    description: 'Identische Dateien in der Auswahl finden',
+    category: 'files',
+    context: 'selection',
+  },
+  'files:hash': {
+    id: 'files:hash',
+    label: 'SHA-256 kopieren',
+    icon: 'bi-fingerprint',
+    description: 'Prüfsumme der gewählten Datei kopieren',
+    category: 'files',
+    context: 'single-file',
+  },
+  'files:locks': {
+    id: 'files:locks',
+    label: 'Dateisperre prüfen',
+    icon: 'bi-lock',
+    description: 'Prozesse mit Zugriff auf die Datei anzeigen',
+    category: 'files',
+    context: 'single-file',
+  },
 });
 
 const CUSTOM_ACTION_IDS = Object.freeze([
@@ -211,6 +252,11 @@ const CUSTOM_ACTION_IDS = Object.freeze([
   'run-admin',
   'image-tools',
   'recent-folders',
+  'bulk-rename',
+  'files:size',
+  'files:duplicates',
+  'files:hash',
+  'files:locks',
 ]);
 
 const PROGRAM_ID = /^program:[0-9a-f-]{36}$/i;
@@ -327,6 +373,12 @@ function availability(action, context) {
   ) {
     return { available: false, reason: 'JPG- oder PNG-Bilder auswählen' };
   }
+  if (
+    action.context === 'single-file' &&
+    (context.selected.length !== 1 || !context.selectedIsFile)
+  ) {
+    return { available: false, reason: 'Genau eine Datei auswählen' };
+  }
   if (action.context === 'selection' && (!context.folder || !context.selected.length)) {
     return { available: false, reason: 'Zuerst eine Datei oder einen Ordner auswählen' };
   }
@@ -343,6 +395,23 @@ function availability(action, context) {
     return { available: false, reason: 'Auswahl liegt in verschiedenen Ordnern' };
   }
   if (
+    action.id === 'bulk-rename' &&
+    (context.selected.length > 100 ||
+      !context.selected.every(
+        (item) =>
+          path.dirname(item).toLowerCase() === path.dirname(context.selected[0]).toLowerCase(),
+      ) ||
+      !context.selected.every((item) => {
+        try {
+          return fs.statSync(item).isFile();
+        } catch {
+          return false;
+        }
+      }))
+  ) {
+    return { available: false, reason: 'Nur normale Dateien umbenennen' };
+  }
+  if (
     action.context === 'exe' &&
     (!context.folder || context.selected.length !== 1 || context.type !== '.exe')
   ) {
@@ -351,16 +420,83 @@ function availability(action, context) {
   return { available: true, reason: '' };
 }
 
+function defaultSlotsForContext(context) {
+  const selected = context.selected;
+  const images = selected.length > 0 && selected.every(isSupportedImage);
+  if (!selected.length) {
+    const rank = { Zuletzt: 0, Offen: 1, Gespeichert: 2 };
+    const destinations = (context.destinations || [])
+      .map((entry, index) => ({ entry, index }))
+      .sort((left, right) => (rank[left.entry.kind] ?? 3) - (rank[right.entry.kind] ?? 3))
+      .slice(0, 4);
+    return [0, 1, 2, 3]
+      .map((slot) => (destinations[slot] ? `destination:${destinations[slot].index}` : null))
+      .concat([
+        context.folder ? 'smart-copy' : null,
+        'windows-tools',
+        context.destinations?.length ? 'recent-folders' : 'terminal',
+        'settings',
+      ]);
+  }
+  if (selected.length > 1) {
+    const canBundle = selected.every(
+      (item) => path.dirname(item).toLowerCase() === path.dirname(selected[0]).toLowerCase(),
+    );
+    const canRename =
+      canBundle &&
+      selected.length <= 100 &&
+      selected.every((item) => {
+        try {
+          return fs.statSync(item).isFile();
+        } catch {
+          return false;
+        }
+      });
+    return [
+      images ? 'image-tools' : canBundle ? 'folders' : 'recent-folders',
+      'quick',
+      'files:duplicates',
+      'file-tools',
+      'smart-copy',
+      canRename ? 'bulk-rename' : 'files:size',
+      'terminal',
+      'settings',
+    ];
+  }
+  if (!context.selectedIsFile) {
+    return [
+      'quick',
+      'files:size',
+      'smart-copy',
+      'file-tools',
+      'recent-folders',
+      'terminal',
+      'windows-tools',
+      'settings',
+    ];
+  }
+  return [
+    images ? 'image-tools' : 'quick',
+    images ? 'quick' : 'smart-copy',
+    images ? 'smart-copy' : 'file-tools',
+    images ? 'file-tools' : context.type === '.exe' ? 'run-admin' : 'files:hash',
+    images ? 'files:hash' : 'files:locks',
+    'recent-folders',
+    'terminal',
+    'settings',
+  ];
+}
+
 function wheelActions(profiles, context) {
   const normalized = normalizeProfiles(profiles);
-  const images = context.selected.length > 0 && context.selected.every(isSupportedImage);
-  const slots = [...normalized.layouts[normalized.active]];
-  if (normalized.active === 'default' && !context.loading) {
-    if (images) slots[1] = 'image-tools';
-    if (!context.selected.length) slots[5] = 'recent-folders';
-  }
+  const slots =
+    normalized.active === 'default' && !context.loading
+      ? defaultSlotsForContext(context)
+      : normalized.layouts[normalized.active];
   return slots.map((slot) => {
+    if (!slot) return null;
     const program = normalized.programs.find((item) => item.id === slot);
+    const destination = /^destination:(\d+)$/.exec(slot);
     const action = program
       ? {
           ...program,
@@ -369,13 +505,23 @@ function wheelActions(profiles, context) {
           category: 'program',
           context: 'program',
         }
-      : ACTIONS[effectiveId(slot, context)];
+      : destination
+        ? {
+            id: slot,
+            label:
+              path.basename(context.destinations?.[Number(destination[1])]?.path || '') || 'Ordner',
+            icon: 'bi-folder2-open',
+            description: context.destinations?.[Number(destination[1])]?.path || '',
+            category: 'destination',
+            context: 'any',
+          }
+        : ACTIONS[effectiveId(slot, context)];
     return { ...action, ...availability(action, context) };
   });
 }
 
 function allowedAction(id, profiles, context) {
-  return wheelActions(profiles, context).find((action) => action.id === id && action.available);
+  return wheelActions(profiles, context).find((action) => action?.id === id && action.available);
 }
 
 module.exports = {

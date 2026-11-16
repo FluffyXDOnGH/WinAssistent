@@ -9,6 +9,18 @@ function isSupportedImage(file) {
   return IMAGE_EXTENSIONS.has(path.extname(file).toLowerCase());
 }
 
+function orderImages(files, order) {
+  if (
+    !Array.isArray(order) ||
+    order.length !== files.length ||
+    !order.every((index) => Number.isInteger(index) && index >= 0 && index < files.length) ||
+    new Set(order).size !== files.length
+  ) {
+    throw new Error('Ungültige Bildreihenfolge.');
+  }
+  return order.map((index) => files[index]);
+}
+
 async function checkedImages(files) {
   if (
     !Array.isArray(files) ||
@@ -100,4 +112,4 @@ async function imagesToPdf(files) {
   return writeNewFile(target, await document.save());
 }
 
-module.exports = { isSupportedImage, prepareForSharing, imagesToPdf };
+module.exports = { isSupportedImage, orderImages, prepareForSharing, imagesToPdf };

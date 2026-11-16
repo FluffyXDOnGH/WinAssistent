@@ -103,6 +103,16 @@ const directionNames = [
 ];
 const directions = () => directionNames.map((name) => t(name));
 const areas = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'];
+const standardPreviewSlots = [
+  'quick',
+  'smart-copy',
+  'file-tools',
+  'files:hash',
+  'files:locks',
+  'recent-folders',
+  'terminal',
+  'settings',
+];
 let destinations = [];
 let customSlots = [];
 let profileLayouts = {};
@@ -227,6 +237,11 @@ function renderProfile() {
   const isCustom = profile.value === 'custom';
   customEditor.hidden = !isCustom;
   profilePreview.hidden = isCustom;
+  profilePreview.querySelector('p').textContent = t(
+    profile.value === 'default'
+      ? 'Beispiel: eine Datei ausgewählt. Die Belegung passt sich dem Kontext an.'
+      : 'Belegung dieses Profils. Zum Aktivieren speichern.',
+  );
   customSlotList.replaceChildren();
   profileSlotList.replaceChildren();
   if (!actionCatalog.length) return;
@@ -239,7 +254,11 @@ function renderProfile() {
       description: program.file,
     })),
   ];
-  const slots = isCustom ? customSlots : profileLayouts[profile.value] || [];
+  const slots = isCustom
+    ? customSlots
+    : profile.value === 'default'
+      ? standardPreviewSlots
+      : profileLayouts[profile.value] || [];
   slots.forEach((id, index) => {
     const row = document.createElement('label');
     row.className = `custom-slot${isCustom ? '' : ' profile-slot'}`;

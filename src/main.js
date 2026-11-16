@@ -27,7 +27,7 @@ const {
   findDuplicates,
 } = require('./feature-actions');
 const { renamePlan, applyRenamePlan } = require('./rename-actions');
-const { prepareForSharing, imagesToPdf } = require('./image-actions');
+const { orderImages, prepareForSharing, imagesToPdf } = require('./image-actions');
 const { createAppDialog } = require('./app-dialog');
 const { loadConfig, writeConfig, DEFAULT_HOTKEY } = require('./config');
 const { dictionaries, language, translate } = require('./i18n');
@@ -241,7 +241,12 @@ function wheelPayload(value) {
   ]
     .filter((entry) => {
       const key = entry.path.toLowerCase();
-      if (seen.has(key) || !fs.existsSync(entry.path)) return false;
+      if (seen.has(key)) return false;
+      try {
+        if (!fs.statSync(entry.path).isDirectory()) return false;
+      } catch {
+        return false;
+      }
       seen.add(key);
       return true;
     })
@@ -250,16 +255,21 @@ function wheelPayload(value) {
     ...value,
     destinations,
     language: config.language,
-    actions: wheelActions(config.profiles, value).map((action) => ({
-      ...action,
-      label:
-        action.category === 'program' ? action.label : translate(config.language, action.label),
-      description: translate(config.language, action.description),
-      reason: translate(config.language, action.reason),
-      ...(action.category === 'program'
-        ? { iconUrl: programIcons.get(action.file.toLowerCase()) || null }
-        : {}),
-    })),
+    actions: wheelActions(config.profiles, { ...value, destinations }).map((action) =>
+      action
+        ? {
+            ...action,
+            label: ['program', 'destination'].includes(action.category)
+              ? action.label
+              : translate(config.language, action.label),
+            description: translate(config.language, action.description),
+            reason: translate(config.language, action.reason),
+            ...(action.category === 'program'
+              ? { iconUrl: programIcons.get(action.file.toLowerCase()) || null }
+              : {}),
+          }
+        : null,
+    ),
   };
 }
 function selectedFolder() {
@@ -320,7 +330,7 @@ function commitGesture() {
     return;
   const index = gesture.index;
   gesture = null;
-  const action = wheelActions(config.profiles, context)[index];
+  const action = wheelPayload(context).actions[index];
   wheel.webContents.send('gesture', {
     kind: action?.available ? 'select' : 'hover',
     index: action?.available ? index : -1,
@@ -609,6 +619,20 @@ async function quickFile(mode, index) {
 }
 async function perform(id, payload) {
   if (typeof id !== 'string') throw new Error('Unbekannte Aktion.');
+  const directDestination = /^destination:(\d+)$/.exec(id);
+  if (directDestination) {
+    if (config.profiles.active !== 'default' || context.loading || context.selected.length) {
+      throw new Error('Diese Aktion ist hier nicht verfügbar.');
+    }
+    const index = Number(directDestination[1]);
+    const payload = wheelPayload(context);
+    const destination = payload.destinations[index];
+    if (!destination || !payload.actions.some((action) => action?.id === id))
+      throw new Error('Ungültiger Zielordner.');
+    hideWheel();
+    await openTarget(destination.path);
+    return true;
+  }
   if (id.startsWith('quick:')) {
     const match = /^quick:(copy|move|open):(\d+)$/.exec(id);
     if (!match) throw new Error('Unbekannte Aktion.');
@@ -640,7 +664,10 @@ async function perform(id, payload) {
       gaming: 'gaming-tools',
       images: 'image-tools',
     }[group];
-    if (!allowedAction(parent, config.profiles, context))
+    if (
+      !allowedAction(parent, config.profiles, context) &&
+      !allowedAction(id, config.profiles, context)
+    )
       throw new Error('Diese Aktion ist hier nicht verfügbar.');
     const selected = context.selected;
     const folder = context.folder;
@@ -655,7 +682,7 @@ async function perform(id, payload) {
         detail: created.join('\n'),
       });
     } else if (group === 'images' && command === 'pdf') {
-      const files = [...selected];
+      const files = orderImages(selected, payload?.order);
       hideWheel();
       const created = await imagesToPdf(files);
       await appDialog.show({
@@ -1010,7 +1037,8 @@ if (hasSingleInstanceLock)
     ipcMain.handle('rename-preview', async (event, options) => {
       if (
         event.sender !== wheel.webContents ||
-        !allowedAction('file-tools', config.profiles, context)
+        (!allowedAction('file-tools', config.profiles, context) &&
+          !allowedAction('bulk-rename', config.profiles, context))
       )
         return { ok: false, error: 'Dateiaktionen sind hier nicht verfügbar.' };
       try {
@@ -1022,7 +1050,8 @@ if (hasSingleInstanceLock)
     ipcMain.handle('rename-apply', async (event, options, expected) => {
       if (
         event.sender !== wheel.webContents ||
-        !allowedAction('file-tools', config.profiles, context)
+        (!allowedAction('file-tools', config.profiles, context) &&
+          !allowedAction('bulk-rename', config.profiles, context))
       )
         return { ok: false, error: 'Dateiaktionen sind hier nicht verfügbar.' };
       if (renameInProgress) return { ok: false, error: 'Eine Umbenennung läuft bereits.' };

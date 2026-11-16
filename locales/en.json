@@ -301,5 +301,18 @@
   "No free output name was found.": "No free output name was found.",
   "Invalid image size.": "Invalid image size.",
   "Cannot open one of the selected images.": "Cannot open one of the selected images.",
-  "Select at least two images.": "Select at least two images."
+  "Select at least two images.": "Select at least two images.",
+  "Dateien mit Vorschau umbenennen": "Rename files with a preview",
+  "Größe und Inhalt der Auswahl prüfen": "Check selection size and contents",
+  "Identische Dateien in der Auswahl finden": "Find identical files in the selection",
+  "Prüfsumme der gewählten Datei kopieren": "Copy the selected file's checksum",
+  "Prozesse mit Zugriff auf die Datei anzeigen": "Show processes using the file",
+  "Genau eine Datei auswählen": "Select exactly one file",
+  "Nur normale Dateien umbenennen": "Only regular files can be renamed",
+  "Ungültige Bildreihenfolge.": "Invalid image order.",
+  "Neue Dateien neben den Originalen. PDF-Seiten mit den Pfeilen sortieren.": "New files are saved beside the originals. Use the arrows to set PDF page order.",
+  "Nach oben": "Move up",
+  "Nach unten": "Move down",
+  "Die Belegung passt sich an die Auswahl im Explorer oder auf dem Desktop an.": "Actions change with the selection in Explorer or on the desktop.",
+  "Beispiel: eine Datei ausgewählt. Die Belegung passt sich dem Kontext an.": "Example: one file selected. Actions change with the context."
 }

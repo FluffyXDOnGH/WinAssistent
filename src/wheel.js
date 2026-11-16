@@ -9,6 +9,9 @@ let transferState = null;
 let renameOptions = { prefix: '', suffix: '', search: '', replace: '', numbering: false };
 let renameRequest = 0;
 let expectedHash = '';
+let imageOrder = [];
+let imageSelectionKey = '';
+let imageSize = 1600;
 function formatBytes(bytes) {
   if (bytes < 1024) return `${bytes} B`;
   const units = ['KB', 'MB', 'GB', 'TB'];
@@ -18,7 +21,7 @@ function formatBytes(bytes) {
 const menus = {
   images: {
     title: 'Bilder',
-    hint: 'Neue Dateien entstehen neben den Originalen.',
+    hint: 'Neue Dateien neben den Originalen. PDF-Seiten mit den Pfeilen sortieren.',
     items: [
       ['images:share', 'Fürs Teilen vorbereiten', 'bi-image', 'images'],
       ['images:pdf', 'Bilder als PDF', 'bi-file-earmark-pdf', 'image-pair'],
@@ -120,7 +123,7 @@ function createSlot(index) {
   });
 
   box.append(button);
-  slots.push({ button, icon, label });
+  slots.push({ button, spoke, icon, label });
 }
 
 function updateActions(actions) {
@@ -128,9 +131,10 @@ function updateActions(actions) {
     for (let index = 0; index < 8; index++) createSlot(index);
   }
 
-  slots.forEach(({ button, icon, label }, index) => {
+  slots.forEach(({ button, spoke, icon, label }, index) => {
     const action = actions[index];
     button.hidden = !action;
+    spoke.hidden = !action;
     if (!action) return;
     button.dataset.action = action.id;
     button.dataset.submenu = action.submenu || '';
@@ -176,7 +180,9 @@ function addMenuButton(id, label, icon, requirement) {
         ? document.getElementById('folder-name')?.value
         : id === 'images:share'
           ? Number(document.getElementById('image-size')?.value)
-          : undefined;
+          : id === 'images:pdf'
+            ? { order: [...imageOrder] }
+            : undefined;
     row.disabled = true;
     if (!(await window.app.action(id, name))) row.disabled = false;
   };
@@ -267,6 +273,41 @@ function renderHashPanel() {
   input.focus();
 }
 
+function renderImageOrder(container) {
+  container.replaceChildren();
+  imageOrder.forEach((sourceIndex, position) => {
+    const file = current.selected[sourceIndex];
+    const row = document.createElement('div');
+    row.className = 'image-order-row';
+    const name = document.createElement('span');
+    name.textContent = `${position + 1}. ${file.split(/[\\/]/).at(-1)}`;
+    name.title = file;
+    row.append(name);
+    for (const [step, icon, label] of [
+      [-1, 'bi-arrow-up', 'Nach oben'],
+      [1, 'bi-arrow-down', 'Nach unten'],
+    ]) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'image-order-move';
+      button.innerHTML = `<i class="bi ${icon}" aria-hidden="true"></i>`;
+      button.title = t(label);
+      button.setAttribute('aria-label', `${t(label)}: ${file.split(/[\\/]/).at(-1)}`);
+      button.disabled = position + step < 0 || position + step >= imageOrder.length;
+      button.onclick = () => {
+        const target = position + step;
+        [imageOrder[position], imageOrder[target]] = [imageOrder[target], imageOrder[position]];
+        renderImageOrder(container);
+        [...(container.children[target]?.querySelectorAll('button') || [])]
+          .find((candidate) => !candidate.disabled)
+          ?.focus();
+      };
+      row.append(button);
+    }
+    container.append(row);
+  });
+}
+
 function renderPanel() {
   list.replaceChildren();
   const menu = menus[activePanel];
@@ -303,11 +344,14 @@ function renderPanel() {
   }
   if (menu) {
     if (activePanel === 'images') {
+      const key = JSON.stringify(current.selected);
+      if (key !== imageSelectionKey) {
+        imageSelectionKey = key;
+        imageOrder = current.selected.map((_, index) => index);
+      }
       const preview = document.createElement('div');
       preview.className = 'image-preview';
-      preview.textContent = current.selected
-        .map((file, index) => `${index + 1}. ${file.split(/[\\/]/).at(-1)}`)
-        .join('\n');
+      renderImageOrder(preview);
       list.append(preview);
       const size = document.createElement('select');
       size.id = 'image-size';
@@ -316,9 +360,12 @@ function renderPanel() {
         const option = document.createElement('option');
         option.value = edge;
         option.textContent = t('Maximal {count} px', { count: edge });
-        option.selected = edge === 1600;
+        option.selected = edge === imageSize;
         size.append(option);
       }
+      size.onchange = () => {
+        imageSize = Number(size.value);
+      };
       list.append(size);
     }
     if (activePanel === 'folders') {
@@ -470,6 +517,8 @@ window.replayWheelAnimation = () => {
   panel.hidden = true;
   activePanel = '';
   transferState = null;
+  imageSelectionKey = '';
+  imageOrder = [];
   document.getElementById('transfer-status').hidden = true;
   for (const element of document.querySelectorAll('.orbit,.spoke,.segment,.hub')) {
     element.style.animation = 'none';

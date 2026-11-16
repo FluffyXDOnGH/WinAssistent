@@ -272,6 +272,12 @@ body {
   background-size: contain;
   box-shadow: none;
 }
+.segment > span {
+  max-width: calc(100% - 16px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .segment:hover i.program-icon,
 .segment.activated i.program-icon,
 .segment.gesture-target i.program-icon,
@@ -1514,13 +1520,43 @@ h2 {
   border-color: rgb(var(--c) / 0.55);
 }
 .image-preview {
-  max-height: 70px;
+  max-height: 118px;
   overflow: auto;
-  white-space: pre-line;
-  overflow-wrap: anywhere;
-  font-size: 11px;
-  line-height: 1.5;
   color: rgb(var(--c) / 0.68);
+}
+.image-order-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 29px;
+  font-size: 11px;
+}
+.image-order-row + .image-order-row {
+  border-top: 1px solid rgb(var(--c) / 0.08);
+}
+.image-order-row span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.image-order-move {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgb(var(--c) / 0.14);
+  border-radius: 6px;
+  background: rgb(var(--c) / 0.06);
+  color: rgb(var(--c));
+  cursor: pointer;
+}
+.image-order-move:hover {
+  background: rgb(var(--c) / 0.14);
+}
+.image-order-move:disabled {
+  opacity: 0.3;
+  cursor: default;
 }
 .hash-label {
   display: block;
