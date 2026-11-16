@@ -1,96 +1,59 @@
 # WinAssistent
 
-Ein Windows-11-Tool mit animiertem Aktionsrad, globalem Hotkey, Tray-Symbol und Einstellungsfenster. Die Oberfläche nutzt Electron, HTML und CSS.
+WinAssistent puts the actions you use most within reach of your cursor. Open the action wheel from Windows Explorer or the desktop, choose a direction, and work with the current folder or selected files without digging through menus.
 
-Meldungen, Fehler und Ergebnisfenster verwenden ein eigenes WinAssistent-Design. Die Dateieigenschaften öffnen direkt über die Windows Shell. Der Windows-Dateiauswahldialog und die Windows-Eigenschaften selbst bleiben Systemfenster.
+The wheel adapts to its context. It can open a terminal in the current folder, copy file details, calculate a SHA-256 hash, compare files, or send a selection to a saved destination. You can arrange eight actions around the wheel, choose a ready-made profile, and add your own programs.
 
-## Starten
+> **Status:** WinAssistent is in beta. The source is public; the first downloadable release will appear on the [Releases page](https://github.com/mambuzrrr/WinAssistent/releases) when it is ready.
 
-Voraussetzungen für die Entwicklung: Windows 11, Node.js, npm und Visual Studio Build Tools mit C++-Werkzeugen.
+## At a glance
+
+- **Open it anywhere:** Use `Ctrl+Alt+Space` or `Alt` + right-click. A short click leaves the wheel open; hold and drag at least 60 px toward an action to select it on release.
+- **Work with files:** Copy names, paths, and details; calculate or verify SHA-256; compare two files; inspect folder size; find duplicate files; batch rename with a preview; and check which processes lock a file.
+- **Move things quickly:** Copy or move selections to saved, open, or recent folders. Cancellable transfers show progress and handle name collisions.
+- **Keep your tools close:** Launch a terminal in the current folder, open Windows utilities, or run your own EXE with configured arguments and working directory. Custom program icons appear in the wheel.
+- **Make it yours:** Choose Standard, Developer, or Gamer, or build a Custom wheel with eight actions. Developer actions can recognize a project root from common project files.
+- **Stay out of the way:** The app runs in the notification area. You can pause the wheel, disable the mouse gesture in full-screen apps, and adjust the interface scale.
+
+Actions that need a file selection are unavailable when WinAssistent cannot identify one reliably. The wheel also works on the desktop; virtual items such as Recycle Bin are excluded from file actions.
+
+## Getting started
+
+WinAssistent requires Windows 11. Once an installer is published, download it from the [official Releases page](https://github.com/mambuzrrr/WinAssistent/releases). The installer creates Start Menu and desktop shortcuts. Double-click the tray icon to open settings; the tray menu also lets you open the wheel, pause it, or quit.
+
+To run the source locally, install Node.js, npm, and the Visual Studio C++ build tools, then run:
 
 ```powershell
 npm install
 npm start
 ```
 
-Der Standard-Hotkey ist **Strg + Alt + Leertaste**. Auch **Alt + Rechtsklick** öffnet das Rad; für diesen Klick wird das normale Kontextmenü unterdrückt. Ein Doppelklick auf das Tray-Symbol öffnet die Einstellungen. Im Tray-Menü lässt sich das Rad öffnen, pausieren und wieder aktivieren oder die App beenden. Der Pause-Schalter ist auch in den Einstellungen verfügbar; während der Pause bleiben Einstellungen und Tray erreichbar.
+The native module is built during setup. To rebuild it explicitly, run `npm run native:build`.
 
-In den Einstellungen kann **Bei Vollbild pausieren** aktiviert werden. Dann greift WinAssistent Alt + Rechtsklick in Vollbildanwendungen nicht ab; der Klick geht normal an die Anwendung. Der Tastatur-Hotkey bleibt nutzbar. Die Option ist anfangs ausgeschaltet.
+## Settings and profiles
 
-Das Einstellungsfenster hat die Bereiche **Allgemein** und **Aktionsrad**. Unter Allgemein lässt sich die Anzeigegröße der Einstellungen auf 100, 115 oder 130 Prozent stellen; die Vorschau erscheint sofort und wird mit **Speichern** übernommen.
-Nach dem Speichern erscheint oben kurz eine Bestätigung. Fehler und Hinweise werden dort ebenfalls angezeigt.
-Im Bereich Aktionsrad sind die acht Plätze bei jedem Profil sichtbar. Standard, Developer und Gamer zeigen ihre feste Belegung als Vorschau; nur das Custom-Profil lässt sich direkt bearbeiten.
+**General** contains the wheel toggle, activation options, interface scale, language, quick destinations, and update controls. **Action wheel** contains profile selection and the eight slots. Standard, Developer, and Gamer are ready to use; Custom lets you assign each direction and add programs.
 
-Für eine Richtungsgeste **Alt + Rechtsklick halten**, mindestens 60 Pixel zu einem der acht Plätze ziehen und loslassen. Bei einem kurzen Klick bleibt das Rad offen. Eine nicht verfügbare Aktion wird nicht ausgelöst; bei einem Platz mit Untermenü öffnet sich dieses zur weiteren Auswahl.
+English is the default for new installations. German is also available. Your selected language is preserved when you update.
 
-## Aktionen
+Profiles can be exported to and imported from JSON. An export includes custom program paths, arguments, and working directories, so review it before sharing. Importing a profile does not change your hotkey or quick destinations. Save the imported profile to apply it.
 
-- Terminal im aktuellen Explorer-Ordner öffnen
-- Mehrere markierte Dateien oder Ordner in einem neuen Ordner zusammenfassen
-- Namen, einen Pfad, alle Pfade oder Dateiinformationen kopieren (Smart Copy)
-- Eigenschaften anzeigen, SHA-256 einer Datei kopieren, zwei Dateien nach Größe und Inhalt vergleichen oder eine `.exe` als Administrator starten
-- Für eine ausgewählte Datei prüfen, welche Prozesse sie laut Windows Restart Manager derzeit verwenden
-- 2 bis 100 Dateien mit Vorschau umbenennen: Präfix, Suffix, Suchen und Ersetzen sowie Nummerierung; Dateiendungen bleiben erhalten
-- Auswahl in gespeicherte, offene oder zuletzt genutzte Ordner kopieren oder verschieben (Schnell ablegen)
-- Größe, Datei- und Ordnerzahl einer Auswahl inklusive Unterordnern anzeigen
-- SHA-256 einer Datei gegen eine bekannte Prüfsumme prüfen; beim Vergleich zweier Dateien beide Hashes anzeigen
-- Identische Dateien in markierten Ordnern oder einer Dateiauswahl finden, ohne sie zu verändern
-- Geräte-Manager, Dienste, Ereignisanzeige und Systeminformationen öffnen
-- Aktuellen Ordner öffnen
-- Einstellungen öffnen
+## Updates
 
-In den Einstellungen gibt es vier Profile mit festen Positionen: **Standard**, **Developer**, **Gamer** und **Custom**. Developer erkennt Projektordner anhand von `.git`, `package.json`, `Cargo.toml`, `pyproject.toml`, `go.mod` oder einer `.sln`-Datei. Dort lassen sich ein Terminal im Projekt öffnen und Projektpfade kopieren. Gamer öffnet direkt den Task-Manager sowie Windows-Seiten für Spielmodus, Game Bar und Aufnahmen und den Ressourcenmonitor.
+Installed release builds check GitHub Releases for updates at startup and periodically afterward. When a newer version is available, a green update icon appears in the title bar. You can also check, download, and install from settings. Development builds started with `npm start` do not use the release feed.
 
-Das **Custom-Profil** lässt alle acht Richtungen einzeln belegen. Eigene `.exe`-Programme können per Dateidialog hinzugefügt und mit Namen, optionalem Arbeitsordner und Startargumenten versehen werden. Jedes Argument steht in einer eigenen Zeile. Das Programmsymbol wird aus der EXE gelesen und im Editor sowie im Rad angezeigt. Fehlt die EXE oder der Arbeitsordner später, bleibt der Radplatz sichtbar, aber deaktiviert. Programme werden direkt ohne Shell gestartet.
+The first public release has not been published yet. Until then, the installed version is shown without an update prompt.
 
-Custom-Profile lassen sich als JSON-Datei exportieren oder importieren. Der Export enthält auch die EXE-Pfade, Arbeitsordner und Argumente der eigenen Programme; Hotkey und Schnellablageziele sind nicht enthalten. Ältere Profil-Dateien bleiben importierbar. Nach einem Import wird das Profil erst mit **Speichern** aktiv.
-
-Unter **Allgemein → Sprache** stehen Deutsch und Englisch zur Wahl. Englisch ist bei neuen Installationen voreingestellt; eine bereits gespeicherte Sprachwahl bleibt erhalten. Die Sprache gilt für Einstellungen, Aktionsrad, Tray und die WinAssistent-Dialoge. Die Textdateien liegen in `locales/de.json` und `locales/en.json`.
-
-Der Update-Bereich zeigt die aktuelle Version und bietet eine manuelle Prüfung. Ein installierter Release-Build prüft beim Start und danach alle sechs Stunden auf GitHub nach Updates, einschließlich Beta-Versionen. Bei einer neuen Version erscheint das Symbol in der Titelleiste. Download und Installation werden dort vom Benutzer gestartet. Der normale Entwicklungs-Build (`npm run dist`) enthält noch keine Release-Quelle; dafür wird `npm run release:build` mit dem GitHub-Repository benötigt. Installer, passende Blockmap und `latest.yml` müssen zusammen veröffentlicht werden. `scripts/clean-dist.js` bewahrt diese Dateien für die aktuelle Version auf.
-
-Das Rad erscheint sofort. Ein natives Windows-Modul im Electron-Prozess erkennt Alt + Rechtsklick, das aktive Fenster und liest Ordner sowie Auswahl über die Windows Shell. Schlägt diese Abfrage fehl, wird die bisherige Shell-Abfrage verwendet. Solange keine verlässliche Explorer-Auswahl vorliegt, bleiben Dateiaktionen deaktiviert. Außerhalb des Explorers öffnet Terminal im Benutzerordner. Einstellungen liegen im Electron-Benutzerdatenordner. Für den automatischen Start gibt es in den Einstellungen einen Schalter.
-
-Bei **Alt + Rechtsklick** auf einer unmarkierten Datei wird deren Name über Windows UI Automation erkannt und im aktuellen Ordner aufgelöst. Markierte Dateien werden auch beim Tastenkürzel berücksichtigt. Das gilt ebenfalls für Dateien auf dem Windows-Desktop, einschließlich des öffentlichen Desktops. Virtuelle Desktop-Symbole ohne echten Dateipfad bleiben von Dateiaktionen ausgeschlossen. Für Schnell ablegen sind Downloads, Dokumente und Desktop anfänglich als Zielordner hinterlegt; die Liste lässt sich in den Einstellungen ändern. Existiert am Ziel bereits ein Name, wird eine nummerierte Kopie angelegt.
-
-Bei Schnell ablegen zeigt das Rad übertragene Bytes und Prozentwert sowie den Fortschritt pro ausgewähltem Element. Die Größe von Ordnern wird vor dem Transfer ermittelt. Fehler bei einzelnen Dateien stoppen die übrige Auswahl nicht; erledigte und fehlgeschlagene Elemente werden getrennt ausgewiesen. Eine laufende Übertragung lässt sich im Rad oder über das Tray-Menü abbrechen. Bereits abgeschlossene Elemente bleiben am Ziel; die gerade vorbereitete Kopie wird entfernt und noch nicht begonnene Elemente bleiben unberührt. Kopien werden am Ziel vorbereitet und erst nach vollständigem Kopieren sichtbar. Bei einem Verschieben über Laufwerksgrenzen bleibt die vollständige Kopie erhalten, falls das Entfernen der Quelle fehlschlägt.
-
-Die Massenumbenennung liegt unter **Datei → Massenumbenennung**. Sie zeigt vor dem Ausführen die geplanten Namen und prüft den Ordner erneut beim Bestätigen. Bestehende Dateien werden nicht überschrieben. Bei einem Fehler versucht WinAssistent, bereits geänderte Namen zurückzusetzen und meldet, falls das nicht vollständig gelingt.
-
-Unter **Datei → Dateisperre prüfen** zeigt WinAssistent die Prozesse, die Windows für die ausgewählte Datei als Verwender meldet. Die Abfrage verändert oder beendet keine Prozesse. Ein leeres Ergebnis beweist nicht, dass keine kurzzeitige oder anderweitig nicht erkannte Sperre besteht.
-
-## Projektstruktur
-
-- `src/`: Electron-Hauptprozess, Fenster und Oberflächen
-- `src/action-registry.js`: Aktionsdefinitionen, Verfügbarkeit und Acht-Platz-Profile
-- `src/explorer-context.js`: Explorer-Abfrage und Prüfung der tatsächlichen Auswahl
-- `src/project-context.js`: Erkennung des nächsten Projektordners
-- `src/config.js`: Migration und Speicherung der Einstellungen
-- `src/i18n.js`, `src/localize.js`, `locales/`: Sprachdateien und Übersetzung der Oberfläche
-- `src/program-actions.js`: Start eigener EXE-Programme ohne Shell
-- `src/rename-actions.js`: Planung, Kollisionsprüfung und Rückabwicklung der Massenumbenennung
-- `src/app-dialog.js`, `src/dialog.*`: gemeinsame WinAssistent-Fenster für Meldungen und Fehler
-- `src/profile-transfer.js`: validierter JSON-Import und -Export des Custom-Profils
-- `native/`: C++-Quellcode für Alt + Rechtsklick, Explorer-Kontext und Dateitransfer; wird als Node-Modul in den App-Prozess geladen
-- `assets/`: abgerundetes Logo mit schwarzem Hintergrund als PNG für die Oberfläche und als ICO mit mehreren Größen für Tray, Taskleiste und EXE
-- `scripts/`: prüft beim Entwicklungsstart, ob das native Modul gebaut werden muss
+## Building
 
 ```powershell
 npm run dist
 ```
 
-`dist/` enthält danach einen Windows-Installer. Er legt Verknüpfungen auf dem Desktop und im Startmenü an. Die installierte App startet als `WinAssistent.exe`; das native Modul läuft im selben Prozess. Für die Entwicklung wird das Modul bei Bedarf automatisch kompiliert. Der Installer ist derzeit nicht signiert.
+This creates an unsigned Windows installer in `dist/`. For a release build with the GitHub update source embedded, run `npm run release:build`. That command creates the installer and update metadata locally; it does not upload them. See [RELEASE.md](RELEASE.md) for the publication checklist.
 
-Für einen Release-Build mit dem GitHub-Repository `mambuzrrr/WinAssistent`:
+## Contributing
 
-```powershell
-npm run release:build
-```
+Ideas and bug reports are welcome in [Issues](https://github.com/mambuzrrr/WinAssistent/issues). Please include your WinAssistent version, what you expected, what happened, and steps to reproduce it. See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
 
-Der Befehl baut lokal und lädt nichts hoch. Er prüft, ob der Installer, seine Blockmap, `latest.yml` und die im Paket hinterlegte GitHub-Quelle vorhanden sind. Nur die so erzeugten Dateien gehören in denselben GitHub-Release. Bereits installierte Entwicklungs-Builds ohne Update-Quelle brauchen zunächst eine manuelle Neuinstallation.
-
-Die Vorbereitung für eine spätere Veröffentlichung steht in [RELEASE.md](RELEASE.md). Das [GitHub-Repository](https://github.com/mambuzrrr/WinAssistent) existiert bereits; der Quellcode wurde noch nicht hochgeladen.
-
-Hinweise für künftige Beiträge stehen in [CONTRIBUTING.md](CONTRIBUTING.md).
-
-Der App-Code steht unter [GPL-3.0-only](LICENSE). Diese Lizenz erlaubt eigene Versionen und Weitergabe unter ihren Bedingungen. Der Name **WinAssistent** und das Logo kennzeichnen das offizielle Projekt; die Softwarelizenz macht fremde Versionen nicht zu offiziellen WinAssistent-Releases. Fremde Abhängigkeiten behalten ihre jeweiligen Lizenzen.
+The application source is licensed under [GPL-3.0-only](LICENSE). Third-party dependencies retain their own licenses. WinAssistent's name and logo identify the official project.

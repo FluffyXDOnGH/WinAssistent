@@ -1,11 +1,11 @@
-# Mitmachen
+# Contributing
 
-Ideen, Fehlerberichte und Verbesserungen sind willkommen, sobald das Repository öffentlich ist.
+Ideas, bug reports, and improvements are welcome.
 
-- Für Ideen und Fehler zuerst ein Issue eröffnen. Beschreibe das gewünschte Verhalten, die aktuelle Version und die Schritte zum Nachstellen.
-- Bei größeren Änderungen vorab im Issue abstimmen, damit Arbeit nicht doppelt entsteht.
-- Pull Requests klein und nachvollziehbar halten. Beschreibe, was sich ändert und wie du es geprüft hast.
-- Keine privaten Pfade, Zugangsdaten, Nutzerdaten oder fremden Dateien in Issues, Screenshots und Commits veröffentlichen.
-- Vor einem Pull Request `npm run format:check` ausführen. Native Änderungen nach Möglichkeit auf Windows 11 mit `npm run native:build` prüfen.
+- Open an issue for a bug or feature request. Include the current version, the behavior you expected, and steps to reproduce the problem.
+- Discuss larger changes in an issue before implementing them so the scope is clear.
+- Keep pull requests focused. Explain what changed and how you checked it.
+- Remove private paths, credentials, personal data, and files you do not own from issues, screenshots, and commits.
+- Run `npm run format:check` before submitting a pull request. If you change the native module, also run `npm run native:build` on Windows 11 when possible.
 
-Mit einem Pull Request reichst du deinen Beitrag zur Aufnahme unter der GPL-3.0-only ein. Reiche nur Code und Dateien ein, für die du die nötigen Rechte hast. Die Maintainer entscheiden über die Aufnahme; ein Issue oder Pull Request ist keine Zusage zur Umsetzung.
+By submitting a pull request, you offer your contribution for inclusion under GPL-3.0-only. Submit only code and assets you have the right to license. Maintainers review contributions and decide whether to merge them.

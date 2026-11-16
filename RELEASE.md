@@ -1,19 +1,20 @@
-# Veröffentlichung
+# Release guide
 
-## Geplanter Aufbau
+The source repository is public. Installers and update metadata belong in [GitHub Releases](https://github.com/mambuzrrr/WinAssistent/releases), not in Git. Release builds use this repository as their update source. A fork can set `WINASSISTENT_GITHUB_REPO=owner/repo` when building.
 
-- **Quellcode:** öffentliches GitHub-Repository für Issues, Ideen und Pull Requests. Der lokale Git-Verlauf bleibt bis zur Veröffentlichung unveröffentlicht.
-- **Downloads:** Installer, Versionshinweise und Update-Dateien als Releases desselben Repositorys.
-- **Lizenz:** Der App-Code steht unter GPL-3.0-only. Beiträge werden unter derselben Lizenz eingereicht. Lizenzen der eingebundenen Abhängigkeiten bleiben bestehen.
-- **Name und Logo:** gesondert vom Code behandeln. Vor der Veröffentlichung auf bestehende Marken prüfen und festlegen, wie Dritte Name und Logo verwenden dürfen.
+## Before the first beta
 
-## Vor dem ersten Release
+1. Test installation, startup, the tray, keyboard shortcut, `Alt` + right-click, and uninstallation on a second Windows 11 PC.
+2. Review tracked files and Git history for private data and verify that build output is excluded.
+3. Decide how the project name and logo may be used by third parties. The GPL-3.0-only license covers the application code; dependencies keep their own licenses.
+4. Sign the installer when a code-signing certificate is available. Until then, Windows may warn users about an unsigned download.
 
-1. App auf einem zweiten Windows-11-PC testen: Installation, Start, Tray, Hotkey, Alt + Rechtsklick und Deinstallation.
-2. Installer signieren, sobald ein Code-Signing-Zertifikat vorhanden ist. Ohne Signatur zeigt Windows möglicherweise eine Warnung.
-3. `npm run release:build` ausführen. Das bettet `mambuzrrr/WinAssistent` als Update-Quelle in die App ein und erzeugt lokal Installer, Blockmap und `latest.yml`, ohne etwas hochzuladen. Für einen anderen Fork kann `WINASSISTENT_GITHUB_REPO=owner/repo` gesetzt werden.
-4. Einen Update-Durchlauf mit zwei aufeinanderfolgenden Release-Versionen testen. Bereits installierte Entwicklungs-Builds ohne Update-Quelle müssen einmal manuell aktualisiert werden.
-5. Release-Ordner prüfen: Installer, zugehörige Blockmap und `latest.yml` müssen zur gleichen Version gehören.
-6. Erst danach Quellcode veröffentlichen und Installer sowie Update-Dateien als Assets eines öffentlichen Releases hochladen. Vor dem Push den Git-Verlauf und alle getrackten Dateien auf persönliche Daten und Geheimnisse prüfen.
+## Build and publish a version
 
-Ein öffentliches Repository kann auf GitHub geforkt und lokal kopiert werden. Eine Softwarelizenz kann Bedingungen für Weitergabe und Änderungen festlegen, verhindert Kopien aber nicht technisch. Ein eigenständiger Name, ein klar geregeltes Logo und verlässliche offizielle Releases helfen, das Original erkennbar zu machen.
+1. Update the version in `package.json` and `package-lock.json`, and verify the intended changes.
+2. Run `npm ci`, `npm run format:check`, and `npm run release:build` on Windows.
+3. Check that `dist/` contains the installer, its blockmap, and `latest.yml` for the same version. Keep these files from the same build together.
+4. Create a GitHub release for tag `v<version>`. Mark beta versions as pre-releases, write concrete release notes, and attach the installer, blockmap, and `latest.yml`.
+5. Install the published build on a clean Windows 11 PC and check startup, tray controls, wheel activation, and update status.
+
+`npm run release:build` only produces local files; it does not publish a release. A complete updater test needs two consecutive published versions. Development builds that predate the embedded update source may require a one-time manual install.
