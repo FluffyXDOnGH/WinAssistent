@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../node_modules/bootstrap-icons/font/bootstrap-icons.css" />
+    <link rel="stylesheet" href="style.css" />
+    <title>WinAssistent – Aktionsrad</title>
+  </head>
+  <body class="wheel-page">
+    <div class="wheel">
+      <div class="orbit"></div>
+      <div id="segments"></div>
+
+      <div class="hub">
+        <i class="bi bi-command"></i>
+        <strong>WinAssistent</strong>
+        <small id="context">Bereit</small>
+      </div>
+
+      <div id="quick-panel" class="quick-panel" hidden>
+        <div class="quick-head">
+          <strong id="panel-title">Schnell ablegen</strong>
+          <button id="quick-back" type="button" title="Zurück" aria-label="Zurück">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <p id="quick-count"></p>
+        <div id="transfer-status" class="transfer-status" hidden>
+          <strong id="transfer-label"></strong>
+          <span id="transfer-bytes"></span>
+          <div class="transfer-track"><span id="transfer-fill"></span></div>
+          <ul id="transfer-errors"></ul>
+          <button id="transfer-cancel" type="button">Abbrechen</button>
+        </div>
+        <div id="quick-destinations"></div>
+        <small id="panel-hint">Kopieren oder verschieben – ohne Ordner zu suchen.</small>
+      </div>
+    </div>
+    <script src="localize.js"></script>
+    <script src="wheel.js"></script>
+    <script src="wheel-effects.js"></script>
+  </body>
+</html>

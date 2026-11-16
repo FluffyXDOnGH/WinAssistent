@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../node_modules/bootstrap-icons/font/bootstrap-icons.css" />
+    <link rel="stylesheet" href="style.css" />
+    <title>WinAssistent</title>
+  </head>
+  <body class="settings-page">
+    <div class="settings-frame" id="settings-frame">
+      <div class="titlebar">
+        <div class="titlebar-identity">
+          <span class="titlebar-mark"><img src="../assets/logo-ui.png" alt="" /></span
+          ><span>WinAssistent</span>
+        </div>
+        <button
+          class="github-link"
+          type="button"
+          title="GitHub-Repository öffnen"
+          aria-label="GitHub-Repository öffnen"
+        >
+          <i class="bi bi-github"></i>
+        </button>
+        <div class="titlebar-controls">
+          <button
+            id="update-indicator"
+            class="update-indicator"
+            type="button"
+            title="Update verfügbar"
+            aria-label="Update verfügbar"
+            aria-controls="update-popover"
+            aria-expanded="false"
+            hidden
+          >
+            <i class="bi bi-cloud-arrow-down-fill" aria-hidden="true"></i>
+          </button>
+          <button id="window-minimize" title="Minimieren" aria-label="Minimieren">
+            <i class="bi bi-dash-lg"></i>
+          </button>
+          <button id="window-maximize" title="Maximieren" aria-label="Maximieren">
+            <i class="bi bi-square"></i>
+          </button>
+          <button id="window-close" class="close-control" title="Schließen" aria-label="Schließen">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+      </div>
+      <section id="update-popover" class="update-popover" aria-labelledby="update-title" hidden>
+        <div class="update-popover-head">
+          <div>
+            <strong id="update-title">Update verfügbar</strong>
+            <p id="update-version"></p>
+          </div>
+          <button id="update-dismiss" type="button" title="Schließen" aria-label="Schließen">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <p id="update-message"></p>
+        <div
+          id="update-progress"
+          class="update-progress"
+          role="progressbar"
+          aria-label="Download"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          hidden
+        >
+          <span id="update-progress-fill"></span>
+        </div>
+        <button id="update-action" class="update-action" type="button">Herunterladen</button>
+      </section>
+      <div
+        id="settings-toast"
+        class="settings-toast"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <i id="toast-icon" class="bi bi-check2" aria-hidden="true"></i>
+        <span id="toast-message"></span>
+      </div>
+      <div class="settings-shell">
+        <aside>
+          <div class="app-brand">
+            <span class="brand-mark"><img src="../assets/logo-ui.png" alt="" /></span>WinAssistent
+          </div>
+          <nav class="settings-nav" role="tablist" aria-label="Einstellungen">
+            <button
+              class="nav active"
+              id="tab-general"
+              type="button"
+              role="tab"
+              aria-selected="true"
+              aria-controls="view-general"
+            >
+              <i class="bi bi-sliders"></i> Allgemein
+            </button>
+            <button
+              class="nav"
+              id="tab-wheel"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="view-wheel"
+            >
+              <i class="bi bi-command"></i> Aktionsrad
+            </button>
+          </nav>
+          <div class="aside-foot" id="app-version"></div>
+        </aside>
+        <main>
+          <section
+            id="view-general"
+            class="settings-view"
+            role="tabpanel"
+            aria-labelledby="tab-general"
+          >
+            <header>
+              <div>
+                <h1>Allgemein</h1>
+                <p>Bedienung, Hintergrundbetrieb und Zielordner.</p>
+              </div>
+            </header>
+            <div class="availability">
+              <div class="availability-icon"><i class="bi bi-power"></i></div>
+              <div class="availability-copy">
+                <strong>Aktionsrad aktiv</strong>
+                <p>Zum Pausieren ausschalten. Einstellungen und Tray bleiben erreichbar.</p>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="enabled" aria-label="Aktionsrad aktiv" />
+                <span></span>
+              </label>
+            </div>
+            <h2>Bedienung</h2>
+            <div class="setting">
+              <div class="setting-symbol"><i class="bi bi-translate"></i></div>
+              <div class="setting-copy">
+                <strong>Sprache</strong>
+                <p>Sprache für Einstellungen, Aktionsrad und Tray.</p>
+              </div>
+              <select id="language" aria-label="Sprache">
+                <option value="de">Deutsch</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+            <div class="setting">
+              <div class="setting-symbol"><i class="bi bi-type"></i></div>
+              <div class="setting-copy">
+                <strong>Anzeigegröße</strong>
+                <p>Vergrößert Texte und Bedienelemente in den Einstellungen.</p>
+              </div>
+              <select id="settings-scale" aria-label="Anzeigegröße der Einstellungen">
+                <option value="1">Standard</option>
+                <option value="1.15">Groß · 115 %</option>
+                <option value="1.3">Sehr groß · 130 %</option>
+              </select>
+            </div>
+            <div class="setting">
+              <div class="setting-symbol"><i class="bi bi-keyboard"></i></div>
+              <div class="setting-copy">
+                <strong>Tastenkürzel</strong>
+                <p>Öffnet das Rad aus jedem Fenster.</p>
+              </div>
+              <input id="hotkey" value="Control+Alt+Space" aria-label="Tastenkürzel" />
+            </div>
+            <div class="setting">
+              <div class="setting-symbol"><i class="bi bi-mouse2"></i></div>
+              <div class="setting-copy">
+                <strong>Alt + Rechtsklick</strong>
+                <p>Öffnet das Rad und unterdrückt diesen Kontextmenü-Klick.</p>
+              </div>
+              <span class="badge" id="mouse-status">Aktiv</span>
+            </div>
+            <div class="setting">
+              <div class="setting-symbol"><i class="bi bi-arrows-fullscreen"></i></div>
+              <div class="setting-copy">
+                <strong>Bei Vollbild pausieren</strong>
+                <p>Alt + Rechtsklick bleibt in Spielen und Vollbild-Apps frei.</p>
+              </div>
+              <label class="switch"
+                ><input type="checkbox" id="pause-fullscreen" /><span></span
+              ></label>
+            </div>
+            <div class="setting">
+              <div class="setting-symbol"><i class="bi bi-windows"></i></div>
+              <div class="setting-copy">
+                <strong>Mit Windows starten</strong>
+                <p>Läuft im Infobereich der Taskleiste.</p>
+              </div>
+              <label class="switch"><input type="checkbox" id="startup" /><span></span></label>
+            </div>
+            <h2>Updates</h2>
+            <div class="setting">
+              <div class="setting-symbol"><i class="bi bi-arrow-repeat"></i></div>
+              <div class="setting-copy">
+                <strong>WinAssistent <span id="update-current-version"></span></strong>
+                <p id="update-general-status">Update-Prüfung noch nicht eingerichtet.</p>
+              </div>
+              <button id="update-check" class="secondary" type="button">Updates suchen</button>
+            </div>
+            <h2>Zielordner für Schnell ablegen</h2>
+            <div id="destinations" class="destinations"></div>
+            <button id="add-destination" class="secondary">
+              <i class="bi bi-plus-lg"></i> Zielordner hinzufügen
+            </button>
+          </section>
+          <section
+            id="view-wheel"
+            class="settings-view"
+            role="tabpanel"
+            aria-labelledby="tab-wheel"
+            hidden
+          >
+            <header>
+              <div>
+                <h1>Aktionsrad</h1>
+                <p>Profil und Aktionen für die acht Richtungen.</p>
+              </div>
+            </header>
+            <h2>Profil</h2>
+            <div class="setting">
+              <div class="setting-symbol"><i class="bi bi-grid-3x3-gap"></i></div>
+              <div class="setting-copy">
+                <strong>Profil</strong>
+                <p>Bestimmt die acht festen Aktionen im Rad.</p>
+              </div>
+              <select id="profile" aria-label="Aktionsrad-Profil">
+                <option value="default">Standard</option>
+                <option value="developer">Developer</option>
+                <option value="gamer">Gamer</option>
+                <option value="custom">Custom</option>
+              </select>
+            </div>
+            <div id="profile-preview" class="profile-preview" hidden>
+              <p>Belegung dieses Profils. Zum Aktivieren speichern.</p>
+              <div id="profile-slots" class="custom-slots"></div>
+            </div>
+            <div id="custom-editor" class="custom-editor" hidden>
+              <p>Wähle die Aktion für jede Richtung. Gesperrte Aktionen bleiben im Rad sichtbar.</p>
+              <div id="custom-slots" class="custom-slots"></div>
+              <div class="program-heading">
+                <strong>Eigene Programme</strong
+                ><button id="add-program" class="secondary" type="button">
+                  <i class="bi bi-plus-lg"></i> EXE hinzufügen
+                </button>
+              </div>
+              <div id="custom-programs" class="custom-programs"></div>
+              <div class="custom-tools">
+                <button id="import-profile" class="secondary" type="button">
+                  <i class="bi bi-box-arrow-in-down"></i> Importieren
+                </button>
+                <button id="export-profile" class="secondary" type="button">
+                  <i class="bi bi-box-arrow-up"></i> Exportieren
+                </button>
+              </div>
+              <p class="export-note">
+                Exportierte Profile enthalten auch die Pfade deiner eigenen Programme.
+              </p>
+            </div>
+          </section>
+          <div class="footer">
+            <button id="save" class="save">Speichern</button>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="localize.js"></script>
+    <script src="settings.js"></script>
+  </body>
+</html>

@@ -1,0 +1,10 @@
+node_modules/
+build/
+dist/
+startup-error.log
+*.log
+*.tmp
+*.zip
+.env
+.env.*
+!.env.example

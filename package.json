@@ -1,0 +1,79 @@
+{
+  "name": "winassistent",
+  "version": "0.30.0",
+  "private": true,
+  "license": "GPL-3.0-only",
+  "productName": "WinAssistent",
+  "description": "Schnellzugriff auf Datei- und Systemaktionen unter Windows 11",
+  "main": "src/main.js",
+  "scripts": {
+    "native:build": "node scripts/ensure-native.js --rebuild",
+    "prestart": "node scripts/ensure-native.js",
+    "start": "electron .",
+    "dist": "npm run native:build && electron-builder --win nsis",
+    "release:build": "npm run native:build && node scripts/build-release.js",
+    "postdist": "node scripts/clean-dist.js",
+    "format": "prettier --write \"src/**/*.{js,html,css}\" \"scripts/**/*.js\" README.md package.json",
+    "format:check": "prettier --check \"src/**/*.{js,html,css}\" \"scripts/**/*.js\" README.md package.json"
+  },
+  "devDependencies": {
+    "electron": "^39.0.0",
+    "electron-builder": "^26.18.0",
+    "node-addon-api": "^8.5.0",
+    "node-gyp": "^12.1.0",
+    "prettier": "^3.6.2"
+  },
+  "dependencies": {
+    "bootstrap-icons": "^1.13.2",
+    "electron-updater": "^6.8.11"
+  },
+  "build": {
+    "appId": "de.winassistent.app",
+    "productName": "WinAssistent",
+    "executableName": "WinAssistent",
+    "asar": true,
+    "npmRebuild": false,
+    "files": [
+      "LICENSE",
+      "src/**/*",
+      "locales/*.json",
+      "assets/logo-app.png",
+      "assets/logo-ui.png",
+      "assets/logo-rounded.ico",
+      "node_modules/bootstrap-icons/font/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "LICENSE",
+        "to": "LICENSE.txt"
+      },
+      {
+        "from": "build/Release/mouse_bridge.node",
+        "to": "native/mouse_bridge.node"
+      }
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "icon": "assets/logo-rounded.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "artifactName": "WinAssistent-Setup-${version}.${ext}",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "WinAssistent"
+    }
+  }
+}

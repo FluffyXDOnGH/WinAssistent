@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../node_modules/bootstrap-icons/font/bootstrap-icons.css" />
+    <link rel="stylesheet" href="dialog.css" />
+    <title>WinAssistent</title>
+  </head>
+  <body>
+    <section class="dialog-frame" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+      <header class="dialog-titlebar">
+        <div class="dialog-brand">
+          <img src="../assets/logo-ui.png" alt="" /><span>WinAssistent</span>
+        </div>
+        <button id="dialog-close" type="button" aria-label="Schließen" title="Schließen">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </header>
+      <main>
+        <div class="dialog-heading">
+          <span id="dialog-symbol"><i class="bi bi-info-lg"></i></span>
+          <div>
+            <small id="dialog-kicker">HINWEIS</small>
+            <h1 id="dialog-title"></h1>
+          </div>
+        </div>
+        <p id="dialog-message"></p>
+        <div id="dialog-detail" hidden></div>
+      </main>
+      <footer id="dialog-buttons"></footer>
+    </section>
+    <script src="localize.js"></script>
+    <script src="dialog.js"></script>
+  </body>
+</html>
