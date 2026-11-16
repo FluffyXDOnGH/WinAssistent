@@ -94,7 +94,7 @@ const ACTIONS = Object.freeze({
     icon: 'bi-copy',
     description: 'Namen, Pfade oder Dateiinformationen kopieren',
     category: 'clipboard',
-    context: 'explorer',
+    context: 'selection',
     submenu: 'copy',
   },
   'file-tools': {
@@ -231,6 +231,14 @@ const ACTIONS = Object.freeze({
     category: 'files',
     context: 'single-file',
   },
+  'folder-insights': {
+    id: 'folder-insights',
+    label: 'Ordner-Check',
+    icon: 'bi-bar-chart',
+    description: 'Größte Dateien im aktuellen Ordner finden',
+    category: 'files',
+    context: 'explorer',
+  },
 });
 
 const CUSTOM_ACTION_IDS = Object.freeze([
@@ -257,6 +265,7 @@ const CUSTOM_ACTION_IDS = Object.freeze([
   'files:duplicates',
   'files:hash',
   'files:locks',
+  'folder-insights',
 ]);
 
 const PROGRAM_ID = /^program:[0-9a-f-]{36}$/i;
@@ -432,7 +441,7 @@ function defaultSlotsForContext(context) {
     return [0, 1, 2, 3]
       .map((slot) => (destinations[slot] ? `destination:${destinations[slot].index}` : null))
       .concat([
-        context.folder ? 'smart-copy' : null,
+        context.folder ? 'folder-insights' : null,
         'windows-tools',
         context.destinations?.length ? 'recent-folders' : 'terminal',
         'settings',

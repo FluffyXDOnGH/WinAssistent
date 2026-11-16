@@ -309,5 +309,11 @@
   "Nach oben": "Nach oben",
   "Nach unten": "Nach unten",
   "Die Belegung passt sich an die Auswahl im Explorer oder auf dem Desktop an.": "Die Belegung passt sich an die Auswahl im Explorer oder auf dem Desktop an.",
-  "Beispiel: eine Datei ausgewählt. Die Belegung passt sich dem Kontext an.": "Beispiel: eine Datei ausgewählt. Die Belegung passt sich dem Kontext an."
+  "Beispiel: eine Datei ausgewählt. Die Belegung passt sich dem Kontext an.": "Beispiel: eine Datei ausgewählt. Die Belegung passt sich dem Kontext an.",
+  "Ordner-Check": "Ordner-Check",
+  "Größte Dateien im aktuellen Ordner finden": "Größte Dateien im aktuellen Ordner finden",
+  "Größte Dateien": "Größte Dateien",
+  "Keine Dateien gefunden.": "Keine Dateien gefunden.",
+  "Kein gültiger Ordner gefunden.": "Kein gültiger Ordner gefunden.",
+  "Die Auswertung wurde nach 3.000 Einträgen begrenzt. Angaben können unvollständig sein.": "Die Auswertung wurde nach 3.000 Einträgen begrenzt. Angaben können unvollständig sein."
 }

@@ -314,5 +314,11 @@
   "Nach oben": "Move up",
   "Nach unten": "Move down",
   "Die Belegung passt sich an die Auswahl im Explorer oder auf dem Desktop an.": "Actions change with the selection in Explorer or on the desktop.",
-  "Beispiel: eine Datei ausgewählt. Die Belegung passt sich dem Kontext an.": "Example: one file selected. Actions change with the context."
+  "Beispiel: eine Datei ausgewählt. Die Belegung passt sich dem Kontext an.": "Example: one file selected. Actions change with the context.",
+  "Ordner-Check": "Folder insights",
+  "Größte Dateien im aktuellen Ordner finden": "Find the largest files in the current folder",
+  "Größte Dateien": "Largest files",
+  "Keine Dateien gefunden.": "No files found.",
+  "Kein gültiger Ordner gefunden.": "No valid folder was found.",
+  "Die Auswertung wurde nach 3.000 Einträgen begrenzt. Angaben können unvollständig sein.": "The scan stopped after 3,000 items. Results may be incomplete."
 }

@@ -24,6 +24,7 @@ const {
   compareFiles,
   verifyFileHash,
   analyzeSelection,
+  inspectFolder,
   findDuplicates,
 } = require('./feature-actions');
 const { renamePlan, applyRenamePlan } = require('./rename-actions');
@@ -866,6 +867,45 @@ async function perform(id, payload) {
   if (id === 'terminal') {
     hideWheel();
     mouseBridge.openTerminal(folder || app.getPath('home'));
+    return true;
+  }
+  if (id === 'folder-insights') {
+    hideWheel();
+    const result = await inspectFolder(folder);
+    const unit = result.bytes >= 1024 ** 3 ? 'GB' : result.bytes >= 1024 ** 2 ? 'MB' : 'KB';
+    const divisor = unit === 'GB' ? 1024 ** 3 : unit === 'MB' ? 1024 ** 2 : 1024;
+    const size =
+      result.bytes < 1024
+        ? `${result.bytes.toLocaleString(numberLocale())} B`
+        : `${(result.bytes / divisor).toLocaleString(numberLocale(), { maximumFractionDigits: 1 })} ${unit}`;
+    const largest = result.largest.map(
+      (item, index) =>
+        `${index + 1}. ${path.relative(folder, item.path)} · ${item.bytes.toLocaleString(numberLocale())} ${tr('Bytes')}`,
+    );
+    await appDialog.show({
+      type: result.capped || result.unreadable ? 'warning' : 'info',
+      title: 'Ordner-Check',
+      message: `${size} · ${tr('{count} Dateien', { count: result.files.toLocaleString(numberLocale()) })}`,
+      detail: [
+        folder,
+        `${tr('{count} Ordner', { count: result.folders.toLocaleString(numberLocale()) })}${result.links ? ` · ${tr('{count} Verknüpfungen wurden nicht verfolgt.', { count: result.links })}` : ''}`,
+        result.capped
+          ? tr(
+              'Die Auswertung wurde nach 3.000 Einträgen begrenzt. Angaben können unvollständig sein.',
+            )
+          : '',
+        result.unreadable
+          ? tr('{count} Einträge konnten nicht gelesen werden. Die Größe ist unvollständig.', {
+              count: result.unreadable,
+            })
+          : '',
+        largest.length
+          ? `${tr('Größte Dateien')}\n${largest.join('\n')}`
+          : tr('Keine Dateien gefunden.'),
+      ]
+        .filter(Boolean)
+        .join('\n\n'),
+    });
     return true;
   }
   if (id === 'open-folder') await openTarget(folder);

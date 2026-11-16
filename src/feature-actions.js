@@ -151,6 +151,55 @@ async function analyzeSelection(selected) {
   return result;
 }
 
+async function inspectFolder(folder, limit = 3000) {
+  if (!(await fs.promises.stat(folder)).isDirectory()) {
+    throw new Error('Kein gültiger Ordner gefunden.');
+  }
+  const result = {
+    bytes: 0,
+    files: 0,
+    folders: 0,
+    links: 0,
+    unreadable: 0,
+    capped: false,
+    largest: [],
+  };
+  const pending = [folder];
+  let scanned = 0;
+  while (pending.length) {
+    if (scanned >= limit) {
+      result.capped = true;
+      break;
+    }
+    const item = pending.pop();
+    scanned++;
+    let stat;
+    try {
+      stat = await fs.promises.lstat(item);
+    } catch {
+      result.unreadable++;
+      continue;
+    }
+    if (stat.isSymbolicLink()) {
+      result.links++;
+    } else if (stat.isFile()) {
+      result.files++;
+      result.bytes += stat.size;
+      result.largest.push({ path: item, bytes: stat.size });
+      result.largest.sort((a, b) => b.bytes - a.bytes);
+      result.largest.length = Math.min(result.largest.length, 8);
+    } else if (stat.isDirectory()) {
+      if (item !== folder) result.folders++;
+      try {
+        for (const name of await fs.promises.readdir(item)) pending.push(path.join(item, name));
+      } catch {
+        result.unreadable++;
+      }
+    }
+  }
+  return result;
+}
+
 async function findDuplicates(selected, limit = 5000) {
   if (!Array.isArray(selected) || !selected.length) {
     throw new Error('Bitte Dateien oder Ordner auswählen.');
@@ -223,5 +272,6 @@ module.exports = {
   compareFiles,
   verifyFileHash,
   analyzeSelection,
+  inspectFolder,
   findDuplicates,
 };

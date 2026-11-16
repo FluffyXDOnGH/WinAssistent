@@ -35,7 +35,7 @@ The native module is built during setup. To rebuild it explicitly, run `npm run 
 
 **General** contains the wheel toggle, activation options, interface scale, language, quick destinations, and update controls. **Action wheel** contains profile selection and the eight slots. Standard, Developer, and Gamer are ready to use; Custom lets you assign each direction and add programs.
 
-The Standard profile adapts its actions to the selection. With no selection, saved and open Explorer folders appear directly on the wheel. A selected folder brings size and transfer actions forward; multiple files surface duplicate finding, bundling, and renaming. Image selections show sharing and PDF tools. Use the arrow buttons in the image panel to set the PDF page order before creating the file.
+The Standard profile adapts its actions to the selection. With no selection, saved and open Explorer folders appear directly on the wheel, alongside a scan of the current folder's largest files. A selected folder brings size and transfer actions forward; multiple files surface duplicate finding, bundling, and renaming. Image selections show sharing and PDF tools. Use the arrow buttons in the image panel to set the PDF page order before creating the file. Smart Copy appears only when files or folders are selected.
 
 English is the default for new installations. German is also available. Your selected language is preserved when you update.
 
