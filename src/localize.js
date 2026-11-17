@@ -1,4 +1,5 @@
 const sourceText = new Map();
+const sourceTitle = document.title;
 const sourceAttributes = new Map();
 const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
 while (walker.nextNode()) {
@@ -20,6 +21,7 @@ window.localize = {
   setLanguage(value) {
     window.app.setLanguage(value);
     document.documentElement.lang = value === 'en' ? 'en' : 'de';
+    document.title = window.app.t(sourceTitle);
     for (const [node, original] of sourceText) {
       if (!node.isConnected) continue;
       const whitespace = node.textContent.match(/^\s*/)?.[0] || '';

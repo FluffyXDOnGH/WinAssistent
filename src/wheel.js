@@ -266,7 +266,7 @@ function renderShelfPanel() {
       list.append(
         shelfButton(
           t(mode === 'copy' ? 'Kopieren nach {folder}' : 'Verschieben nach {folder}', {
-            folder: entry.path.split(/[\\/]/).filter(Boolean).at(-1) || entry.path,
+            folder: entry.label || entry.path,
           }),
           mode === 'copy' ? 'bi-copy' : 'bi-arrow-right',
           async () => {
@@ -556,7 +556,7 @@ function renderPanel() {
     const row = document.createElement('div');
     row.className = 'quick-row';
     const name = document.createElement('span');
-    name.textContent = `${folder.split(/[\\/]/).filter(Boolean).at(-1) || folder} · ${t(entry.kind)}`;
+    name.textContent = `${entry.label || folder} · ${t(entry.kind)}`;
     name.title = folder;
 
     const open = document.createElement('button');
@@ -602,7 +602,7 @@ window.app.onContext((data) => {
     : data.loading
       ? t('Suche Datei …')
       : data.folder
-        ? data.folder.split(/[\\/]/).filter(Boolean).at(-1)
+        ? data.folderLabel || data.folder.split(/[\\/]/).filter(Boolean).at(-1)
         : t('Kein Explorer-Ordner');
   if (!panel.hidden) renderPanel();
 });

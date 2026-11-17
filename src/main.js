@@ -32,6 +32,7 @@ const { orderImages, prepareForSharing, imagesToPdf } = require('./image-actions
 const { createAppDialog } = require('./app-dialog');
 const { loadConfig, writeConfig, DEFAULT_HOTKEY } = require('./config');
 const { dictionaries, language, translate } = require('./i18n');
+const { folderLabel, knownFolderNames } = require('./folder-label');
 const { explorerContext } = require('./explorer-context');
 const { slotFromMotion } = require('./gesture');
 const {
@@ -63,6 +64,7 @@ let wheel;
 let settingsWindow;
 let tray;
 let config;
+let knownFolderPaths = {};
 let context = { folder: '', selected: [], type: '', loading: true };
 let wheelRequestId = 0;
 let wheelReady;
@@ -258,8 +260,12 @@ function wheelPayload(value) {
     .slice(0, 12);
   return {
     ...value,
+    folderLabel: folderLabel(value.folder, config.language, knownFolderPaths),
     shelfCount: shelf.length,
-    destinations,
+    destinations: destinations.map((entry) => ({
+      ...entry,
+      label: folderLabel(entry.path, config.language, knownFolderPaths),
+    })),
     language: config.language,
     actions: wheelActions(config.profiles, {
       ...value,
@@ -273,7 +279,9 @@ function wheelPayload(value) {
               action.id === 'open-folder' && value.desktop
                 ? translate(config.language, 'Desktop öffnen')
                 : ['program', 'destination'].includes(action.category)
-                  ? action.label
+                  ? action.category === 'destination'
+                    ? folderLabel(action.description, config.language, knownFolderPaths)
+                    : action.label
                   : translate(config.language, action.label),
             description: translate(
               config.language,
@@ -1006,6 +1014,9 @@ async function perform(id, payload) {
 if (hasSingleInstanceLock)
   app.whenReady().then(() => {
     app.setAppUserModelId('de.winassistent.app');
+    knownFolderPaths = Object.fromEntries(
+      Object.keys(knownFolderNames).map((id) => [id, app.getPath(id)]),
+    );
     config = loadConfig(configPath(), [
       app.getPath('downloads'),
       app.getPath('documents'),

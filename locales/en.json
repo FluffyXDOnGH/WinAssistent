@@ -335,5 +335,13 @@
   "Kopieren nach {folder}": "Copy to {folder}",
   "Verschieben nach {folder}": "Move to {folder}",
   "Desktop öffnen": "Open desktop",
-  "Desktop-Ordner öffnen": "Open the Desktop folder"
+  "Desktop-Ordner öffnen": "Open the Desktop folder",
+  "Dokumente": "Documents",
+  "Downloads": "Downloads",
+  "Musik": "Music",
+  "Bilderordner": "Pictures",
+  "Videos": "Videos",
+  "Desktop": "Desktop",
+  "Aktionsrad-Profil": "Action wheel profile",
+  "WinAssistent – Aktionsrad": "WinAssistent – Action wheel"
 }

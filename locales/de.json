@@ -330,5 +330,18 @@
   "Kopieren nach {folder}": "Kopieren nach {folder}",
   "Verschieben nach {folder}": "Verschieben nach {folder}",
   "Desktop öffnen": "Desktop öffnen",
-  "Desktop-Ordner öffnen": "Desktop-Ordner öffnen"
+  "Desktop-Ordner öffnen": "Desktop-Ordner öffnen",
+  "Dokumente": "Dokumente",
+  "Downloads": "Downloads",
+  "Musik": "Musik",
+  "Bilderordner": "Bilder",
+  "Videos": "Videos",
+  "Desktop": "Desktop",
+  "Updates suchen": "Updates suchen",
+  "Aktionsrad-Profil": "Aktionsrad-Profil",
+  "WinAssistent – Aktionsrad": "WinAssistent – Aktionsrad",
+  "Update-Vorgang läuft bereits.": "Update-Vorgang läuft bereits.",
+  "Kein Update zum Herunterladen verfügbar.": "Kein Update zum Herunterladen verfügbar.",
+  "Bitte die laufende Dateiaktion zuerst abschließen.": "Bitte die laufende Dateiaktion zuerst abschließen.",
+  "Update ist noch nicht bereit.": "Update ist noch nicht bereit."
 }
