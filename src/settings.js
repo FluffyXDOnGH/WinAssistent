@@ -26,7 +26,7 @@ function renderUpdateState(state) {
     state.phase === 'downloaded' ? 'Update bereit' : 'Update verfügbar',
   );
   const status = {
-    unconfigured: 'Update-Prüfung noch nicht eingerichtet.',
+    unconfigured: 'Updates sind nur in der installierten Version verfügbar.',
     checking: 'Suche nach Updates …',
     idle: 'Auf dem neuesten Stand.',
     available: 'Eine neue Version ist verfügbar.',
@@ -72,6 +72,19 @@ updateButton.onclick = async () => {
   if (!result.ok) showToast(t(result.error || 'Update konnte nicht geladen werden.'), 'error');
 };
 window.app.onUpdateState(renderUpdateState);
+const wheelNew = document.getElementById('wheel-new');
+const wheelNewKey = 'wheel-news-0.31';
+wheelNew.hidden = localStorage.getItem(wheelNewKey) === 'seen';
+let wheelNewTimer;
+const wheelTab = document.getElementById('tab-wheel');
+wheelTab.addEventListener('mouseenter', () => {
+  if (wheelNew.hidden) return;
+  wheelNewTimer = setTimeout(() => {
+    wheelNew.hidden = true;
+    localStorage.setItem(wheelNewKey, 'seen');
+  }, 5000);
+});
+wheelTab.addEventListener('mouseleave', () => clearTimeout(wheelNewTimer));
 let toastTimer;
 function showToast(message, tone = 'success') {
   clearTimeout(toastTimer);

@@ -104,6 +104,7 @@
               aria-controls="view-wheel"
             >
               <i class="bi bi-command"></i> Aktionsrad
+              <span class="nav-new" id="wheel-new" hidden>NEW</span>
             </button>
           </nav>
           <div class="aside-foot" id="app-version"></div>
@@ -121,16 +122,26 @@
                 <p>Bedienung, Hintergrundbetrieb und Zielordner.</p>
               </div>
             </header>
-            <div class="availability">
-              <div class="availability-icon"><i class="bi bi-power"></i></div>
-              <div class="availability-copy">
-                <strong>Aktionsrad aktiv</strong>
-                <p>Zum Pausieren ausschalten. Einstellungen und Tray bleiben erreichbar.</p>
+            <div class="availability-group">
+              <div class="availability">
+                <div class="availability-icon"><i class="bi bi-power"></i></div>
+                <div class="availability-copy">
+                  <strong>Aktionsrad aktiv</strong>
+                  <p>Zum Pausieren ausschalten. Einstellungen und Tray bleiben erreichbar.</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="enabled" aria-label="Aktionsrad aktiv" />
+                  <span></span>
+                </label>
               </div>
-              <label class="switch">
-                <input type="checkbox" id="enabled" aria-label="Aktionsrad aktiv" />
-                <span></span>
-              </label>
+              <div class="setting availability-mouse">
+                <div class="setting-symbol"><i class="bi bi-mouse2"></i></div>
+                <div class="setting-copy">
+                  <strong>Alt + Rechtsklick</strong>
+                  <p>Öffnet das Rad und unterdrückt diesen Kontextmenü-Klick.</p>
+                </div>
+                <span class="badge" id="mouse-status">Aktiv</span>
+              </div>
             </div>
             <h2>Bedienung</h2>
             <div class="setting">
@@ -165,14 +176,6 @@
               <input id="hotkey" value="Control+Alt+Space" aria-label="Tastenkürzel" />
             </div>
             <div class="setting">
-              <div class="setting-symbol"><i class="bi bi-mouse2"></i></div>
-              <div class="setting-copy">
-                <strong>Alt + Rechtsklick</strong>
-                <p>Öffnet das Rad und unterdrückt diesen Kontextmenü-Klick.</p>
-              </div>
-              <span class="badge" id="mouse-status">Aktiv</span>
-            </div>
-            <div class="setting">
               <div class="setting-symbol"><i class="bi bi-arrows-fullscreen"></i></div>
               <div class="setting-copy">
                 <strong>Bei Vollbild pausieren</strong>
@@ -195,7 +198,9 @@
               <div class="setting-symbol"><i class="bi bi-arrow-repeat"></i></div>
               <div class="setting-copy">
                 <strong>WinAssistent <span id="update-current-version"></span></strong>
-                <p id="update-general-status">Update-Prüfung noch nicht eingerichtet.</p>
+                <p id="update-general-status">
+                  Updates sind nur in der installierten Version verfügbar.
+                </p>
               </div>
               <button id="update-check" class="secondary" type="button">Updates suchen</button>
             </div>

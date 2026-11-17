@@ -120,7 +120,10 @@ function startUpdates() {
 
 function checkForUpdates() {
   if (updateState.phase === 'unconfigured')
-    return Promise.resolve({ ok: false, error: 'Update-Prüfung noch nicht eingerichtet.' });
+    return Promise.resolve({
+      ok: false,
+      error: 'Updates sind nur in der installierten Version verfügbar.',
+    });
   if (updateTask || ['downloading', 'downloaded'].includes(updateState.phase))
     return Promise.resolve({ ok: true });
   updateTask = autoUpdater
