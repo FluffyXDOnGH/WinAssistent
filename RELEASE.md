@@ -18,3 +18,5 @@ The source repository is public. Installers and update metadata belong in [GitHu
 5. Install the published build on a clean Windows 11 PC and check startup, tray controls, wheel activation, and update status.
 
 `npm run release:build` only produces local files; it does not publish a release. A complete updater test needs two consecutive published versions. Development builds that predate the embedded update source may require a one-time manual install.
+
+To keep an older installer in `dist/` while building a newer one for an update test, set `WINASSISTENT_KEEP_INSTALLER` to its version before running `npm run release:build`. The matching installer and blockmap stay in place; `latest.yml` always belongs to the newly built version.
