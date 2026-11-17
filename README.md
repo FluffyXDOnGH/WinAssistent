@@ -6,6 +6,16 @@ The wheel adapts to its context. It can open a terminal in the current folder, c
 
 > **Status:** WinAssistent is in beta. Download the current Windows installer from the [Releases page](https://github.com/mambuzrrr/WinAssistent/releases). Changes on `main` may not yet be included in the latest installer.
 
+## Preview
+
+**Action wheel**
+
+<img src="docs/images/action-wheel.png" alt="WinAssistent action wheel on a neutral desktop" width="520">
+
+**Settings**
+
+<img src="docs/images/settings.png" alt="WinAssistent general settings" width="760">
+
 ## At a glance
 
 - **Open it anywhere:** Use `Ctrl+Alt+Space` or `Alt` + right-click. A short click leaves the wheel open; hold and drag at least 60 px toward an action to select it on release.
@@ -70,3 +80,9 @@ WinAssistent's beta installers are currently unsigned. On some Windows 11 PCs, *
 Smart App Control does not offer an exception for just one app. If you choose to turn it off, open **Windows Security → App & browser control → Smart App Control settings → Off**, then run the installer again. This changes protection for the whole PC, not only WinAssistent. Whether you can turn it back on without resetting Windows depends on your Windows version and configuration, so check the available options before switching it off. You can instead keep Smart App Control enabled and wait for a signed WinAssistent release.
 
 For details, see [Microsoft's Smart App Control FAQ](https://support.microsoft.com/en-gb/windows/security/threat-malware-protection/smart-app-control-frequently-asked-questions). A **Microsoft Defender SmartScreen** warning is a different message and may offer different choices.
+
+## LOGO
+
+<p align="center">
+  <img src="assets/logo-app.png" alt="WinAssistent logo" width="512" height="512">
+</p>
