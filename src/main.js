@@ -13,6 +13,7 @@ const {
 const { execFile } = require('node:child_process');
 const { randomUUID } = require('node:crypto');
 const { autoUpdater } = require('electron-updater');
+const { checkingState, failedCheckState } = require('./update-state');
 const fs = require('node:fs');
 const path = require('node:path');
 const { quickFile: transferFiles } = require('./file-actions');
@@ -75,6 +76,7 @@ let renameInProgress = false;
 let gesture = null;
 const updateState = { phase: 'unconfigured', version: '', progress: 0, error: '' };
 let updateTask = null;
+let updateCheckSnapshot = null;
 const updateCheckFailed = 'Updateprüfung fehlgeschlagen. Bitte später erneut versuchen.';
 const updateDownloadFailed = 'Download fehlgeschlagen. Bitte erneut versuchen.';
 
@@ -97,7 +99,10 @@ function startUpdates() {
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = false;
   autoUpdater.allowPrerelease = true;
-  autoUpdater.on('checking-for-update', () => setUpdateState('checking', { error: '' }));
+  autoUpdater.on('checking-for-update', () => {
+    const next = checkingState(updateState);
+    setUpdateState(next.phase, next);
+  });
   autoUpdater.on('update-not-available', () => setUpdateState('idle', { version: '', error: '' }));
   autoUpdater.on('update-available', (info) =>
     setUpdateState('available', { version: info.version, progress: 0, error: '' }),
@@ -109,8 +114,13 @@ function startUpdates() {
     setUpdateState('downloaded', { version: info.version, progress: 100, error: '' }),
   );
   autoUpdater.on('error', (error) => {
-    if (noPublishedRelease(error)) {
-      setUpdateState('idle', { version: '', error: '' });
+    if (updateCheckSnapshot) {
+      const next = failedCheckState(
+        updateCheckSnapshot,
+        updateCheckFailed,
+        noPublishedRelease(error),
+      );
+      setUpdateState(next.phase, next);
       return;
     }
     const message = updateState.phase === 'downloading' ? updateDownloadFailed : updateCheckFailed;
@@ -129,20 +139,24 @@ function checkForUpdates() {
     });
   if (updateTask || ['downloading', 'downloaded'].includes(updateState.phase))
     return Promise.resolve({ ok: true });
+  updateCheckSnapshot = { ...updateState };
   updateTask = autoUpdater
     .checkForUpdates()
     .then(() => ({ ok: true }))
     .catch((error) => {
-      if (noPublishedRelease(error)) {
-        setUpdateState('idle', { version: '', error: '' });
-        return { ok: true };
-      }
+      const next = failedCheckState(
+        updateCheckSnapshot,
+        updateCheckFailed,
+        noPublishedRelease(error),
+      );
+      setUpdateState(next.phase, next);
+      if (noPublishedRelease(error)) return { ok: true };
       console.error('Update check failed:', error);
-      setUpdateState('error', { error: updateCheckFailed });
       return { ok: false, error: updateCheckFailed };
     })
     .finally(() => {
       updateTask = null;
+      updateCheckSnapshot = null;
     });
   return updateTask;
 }

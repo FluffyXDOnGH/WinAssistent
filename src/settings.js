@@ -47,12 +47,25 @@ function renderUpdateState(state) {
     state.phase === 'downloaded' ? 'Installieren und neu starten' : 'Herunterladen',
   );
   updateCheck.hidden = state.phase === 'unconfigured';
-  updateCheck.disabled = ['checking', 'downloading', 'downloaded'].includes(state.phase);
+  updateCheck.disabled = ['checking', 'downloading'].includes(state.phase);
+  updateCheck.textContent = t(
+    state.phase === 'available'
+      ? 'Herunterladen'
+      : state.phase === 'downloaded'
+        ? 'Installieren und neu starten'
+        : 'Updates suchen',
+  );
 }
 updateCheck.onclick = async () => {
   updateCheck.disabled = true;
-  const result = await window.app.updateAction('check');
-  updateCheck.disabled = false;
+  const action =
+    updateState.phase === 'available'
+      ? 'download'
+      : updateState.phase === 'downloaded'
+        ? 'install'
+        : 'check';
+  const result = await window.app.updateAction(action);
+  renderUpdateState(updateState);
   if (!result.ok) showToast(t(result.error || 'Update konnte nicht geladen werden.'), 'error');
 };
 updateIndicator.onclick = () => {
