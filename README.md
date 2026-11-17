@@ -62,3 +62,11 @@ This creates an unsigned Windows installer in `dist/`. For a release build with 
 Ideas and bug reports are welcome in [Issues](https://github.com/mambuzrrr/WinAssistent/issues). Please include your WinAssistent version, what you expected, what happened, and steps to reproduce it. See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
 
 The application source is licensed under [GPL-3.0-only](LICENSE). Third-party dependencies retain their own licenses. WinAssistent's name and logo identify the official project.
+
+## If Windows blocks the installer
+
+WinAssistent's beta installers are currently unsigned. On some Windows 11 PCs, **Smart App Control** may block the installer because it cannot verify the publisher. Download WinAssistent only from this repository's [Releases page](https://github.com/mambuzrrr/WinAssistent/releases) and check that the blocked filename matches the release you intended to install.
+
+Smart App Control does not offer an exception for just one app. If you choose to turn it off, open **Windows Security → App & browser control → Smart App Control settings → Off**, then run the installer again. This changes protection for the whole PC, not only WinAssistent. Whether you can turn it back on without resetting Windows depends on your Windows version and configuration, so check the available options before switching it off. You can instead keep Smart App Control enabled and wait for a signed WinAssistent release.
+
+For details, see [Microsoft's Smart App Control FAQ](https://support.microsoft.com/en-gb/windows/security/threat-malware-protection/smart-app-control-frequently-asked-questions). A **Microsoft Defender SmartScreen** warning is a different message and may offer different choices.
