@@ -1783,8 +1783,9 @@ h2 {
   color: rgb(var(--c));
 }
 .titlebar-controls .update-indicator {
+  position: relative;
   color: #62dca0;
-  font-size: 17px;
+  font-size: 19px;
 }
 .titlebar-controls .update-indicator:hover {
   color: #85edb5;
@@ -1792,15 +1793,32 @@ h2 {
 }
 .titlebar-controls .update-indicator i {
   display: inline-block;
-  animation: update-cue 2.6s ease-in-out infinite;
 }
-.titlebar-controls .update-indicator.downloading i {
-  animation-duration: 1.4s;
+.titlebar-controls .update-indicator::after {
+  content: '';
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #8cf2b9;
+  box-shadow: 0 0 5px #62dca0;
+  pointer-events: none;
+  animation: update-pulse 2.8s ease-in-out infinite;
 }
-@keyframes update-cue {
+.titlebar-controls .update-indicator.downloading::after {
+  animation-duration: 1.6s;
+}
+@keyframes update-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.8);
+  }
   50% {
-    transform: translateY(-2px);
-    filter: drop-shadow(0 0 5px #62dca070);
+    opacity: 1;
+    transform: scale(1.25);
   }
 }
 .update-popover {
@@ -1884,7 +1902,7 @@ h2 {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .titlebar-controls .update-indicator i {
+  .titlebar-controls .update-indicator::after {
     animation: none;
   }
 }

@@ -19,6 +19,13 @@ function renderUpdateState(state) {
   updateIndicator.title = t(state.phase === 'downloaded' ? 'Update bereit' : 'Update verfügbar');
   updateIndicator.setAttribute('aria-label', updateIndicator.title);
   updateIndicator.classList.toggle('downloading', state.phase === 'downloading');
+  updateIndicator.querySelector('i').className = `bi ${
+    state.phase === 'downloaded'
+      ? 'bi-cloud-check-fill'
+      : state.phase === 'downloading'
+        ? 'bi-cloud-download-fill'
+        : 'bi-cloud-download'
+  }`;
   document.getElementById('update-version').textContent = state.version
     ? t('Version {version}', { version: state.version })
     : '';
