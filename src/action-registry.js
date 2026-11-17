@@ -181,6 +181,24 @@ const ACTIONS = Object.freeze({
     context: 'images',
     submenu: 'images',
   },
+  'zip-tools': {
+    id: 'zip-tools',
+    label: 'Smart ZIP',
+    icon: 'bi-file-earmark-zip',
+    description: 'ZIP-Archive mit Vorschau in eigene Ordner entpacken',
+    category: 'files',
+    context: 'zip',
+    submenu: 'zip',
+  },
+  'clipboard-image': {
+    id: 'clipboard-image',
+    label: 'Bild speichern',
+    icon: 'bi-clipboard2',
+    description: 'Bild aus der Zwischenablage hier als PNG speichern',
+    category: 'clipboard',
+    context: 'clipboard-image',
+    submenu: 'clipboard-image',
+  },
   'recent-folders': {
     id: 'recent-folders',
     label: 'Zielordner',
@@ -268,6 +286,8 @@ const CUSTOM_ACTION_IDS = Object.freeze([
   'properties',
   'run-admin',
   'image-tools',
+  'clipboard-image',
+  'zip-tools',
   'recent-folders',
   'bulk-rename',
   'files:size',
@@ -383,6 +403,9 @@ function availability(action, context) {
   if (action.context === 'explorer' && !context.folder) {
     return { available: false, reason: 'Nur in einem Explorer-Ordner verfügbar' };
   }
+  if (action.context === 'clipboard-image' && (!context.folder || !context.clipboardImage)) {
+    return { available: false, reason: 'Bild in die Zwischenablage kopieren und Ordner öffnen' };
+  }
   if (action.context === 'project' && !context.projectRoot) {
     return { available: false, reason: 'Kein Projektordner erkannt' };
   }
@@ -391,6 +414,14 @@ function availability(action, context) {
     (!context.selected.length || !context.selected.every(isSupportedImage))
   ) {
     return { available: false, reason: 'JPG- oder PNG-Bilder auswählen' };
+  }
+  if (
+    action.context === 'zip' &&
+    (!context.selected.length ||
+      context.selected.length > 20 ||
+      !context.selected.every((file) => path.extname(file).toLowerCase() === '.zip'))
+  ) {
+    return { available: false, reason: '1 bis 20 ZIP-Dateien auswählen' };
   }
   if (
     action.context === 'single-file' &&
@@ -442,13 +473,17 @@ function availability(action, context) {
 function defaultSlotsForContext(context) {
   const selected = context.selected;
   const images = selected.length > 0 && selected.every(isSupportedImage);
+  const zips =
+    selected.length > 0 &&
+    selected.length <= 20 &&
+    selected.every((file) => path.extname(file).toLowerCase() === '.zip');
   if (!selected.length) {
     if (context.desktop) {
       return [
         context.destinations?.length ? 'recent-folders' : 'open-folder',
         context.destinations?.length ? 'open-folder' : null,
         context.shelfCount ? 'shelf' : null,
-        null,
+        context.clipboardImage ? 'clipboard-image' : null,
         context.folder ? 'folder-insights' : null,
         'windows-tools',
         null,
@@ -461,7 +496,13 @@ function defaultSlotsForContext(context) {
       .sort((left, right) => (rank[left.entry.kind] ?? 3) - (rank[right.entry.kind] ?? 3))
       .slice(0, 4);
     return [0, 1, 2, 3]
-      .map((slot) => (destinations[slot] ? `destination:${destinations[slot].index}` : null))
+      .map((slot) =>
+        slot === 3 && context.clipboardImage
+          ? 'clipboard-image'
+          : destinations[slot]
+            ? `destination:${destinations[slot].index}`
+            : null,
+      )
       .concat([
         context.folder ? 'folder-insights' : null,
         'windows-tools',
@@ -484,7 +525,7 @@ function defaultSlotsForContext(context) {
         }
       });
     return [
-      images ? 'image-tools' : canBundle ? 'folders' : 'recent-folders',
+      images ? 'image-tools' : zips ? 'zip-tools' : canBundle ? 'folders' : 'recent-folders',
       'quick',
       'files:duplicates',
       'file-tools',
@@ -507,7 +548,7 @@ function defaultSlotsForContext(context) {
     ];
   }
   return [
-    images ? 'image-tools' : 'quick',
+    images ? 'image-tools' : zips ? 'zip-tools' : 'quick',
     images ? 'quick' : 'smart-copy',
     images ? 'smart-copy' : 'file-tools',
     images ? 'file-tools' : context.type === '.exe' ? 'run-admin' : 'files:hash',

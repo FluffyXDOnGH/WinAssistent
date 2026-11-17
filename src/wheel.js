@@ -6,6 +6,7 @@ const slots = [];
 const newActions = {
   'folder-insights': 'wheel-news-folder-insights-0.31',
   shelf: 'wheel-news-shelf-0.32',
+  'clipboard-image': 'wheel-news-clipboard-image-next',
 };
 const newsTimers = new Map();
 function dismissActionNewsSoon(id) {
@@ -30,6 +31,8 @@ let expectedHash = '';
 let imageOrder = [];
 let imageSelectionKey = '';
 let imageSize = 1600;
+let imageMode = 'clean';
+let clipboardName = 'Screenshot';
 let shelfItems = [];
 let shelfPlan = null;
 let shelfMode = 'copy';
@@ -41,6 +44,11 @@ function formatBytes(bytes) {
   return `${(bytes / 1024 ** (unit + 1)).toLocaleString(document.documentElement.lang === 'en' ? 'en-US' : 'de-DE', { maximumFractionDigits: 1 })} ${units[unit]}`;
 }
 const menus = {
+  zip: {
+    title: 'Smart ZIP',
+    hint: 'Zielordner und Inhalte vor dem Entpacken prüfen.',
+    items: [['files:extract-zip', 'ZIP entpacken', 'bi-file-earmark-zip', 'zip']],
+  },
   images: {
     title: 'Bilder',
     hint: 'Neue Dateien neben den Originalen. PDF-Seiten mit den Pfeilen sortieren.',
@@ -61,6 +69,7 @@ const menus = {
       ['copy:name', 'Namen kopieren', 'bi-fonts'],
       ['copy:path', 'Pfad kopieren', 'bi-link-45deg'],
       ['copy:paths', 'Alle Pfade kopieren', 'bi-list-ul'],
+      ['copy:markdown', 'Markdown-Pfade kopieren', 'bi-markdown', 'selection'],
       ['copy:info', 'Dateiinformationen', 'bi-info-circle'],
     ],
   },
@@ -71,8 +80,11 @@ const menus = {
       ['files:properties', 'Eigenschaften', 'bi-info-circle'],
       ['files:size', 'Größe der Auswahl', 'bi-pie-chart', 'selection'],
       ['files:hash', 'SHA-256 kopieren', 'bi-fingerprint', 'file'],
+      ['files:contents', 'Inhalt kopieren', 'bi-file-earmark-text', 'text'],
+      ['files:folder-list', 'Ordnerinhalt kopieren', 'bi-list-nested', 'folders-list'],
       ['files:verify-hash', 'SHA-256 prüfen', 'bi-shield-check', 'file'],
-      ['files:compare', 'Zwei Dateien vergleichen', 'bi-files', 'pair'],
+      ['files:compare', 'Dateien oder Ordner vergleichen', 'bi-files', 'compare-pair'],
+      ['files:extract-zip', 'ZIP entpacken', 'bi-file-earmark-zip', 'zip'],
       ['files:duplicates', 'Duplikate finden', 'bi-layers', 'selection'],
       ['files:locks', 'Dateisperre prüfen', 'bi-lock', 'file'],
       ['files:rename', 'Massenumbenennung', 'bi-input-cursor-text', 'multiple'],
@@ -320,9 +332,16 @@ function addMenuButton(id, label, icon, requirement) {
   row.disabled =
     (requirement === 'selection' && !current.selected.length) ||
     (requirement === 'file' && !current.selectedIsFile) ||
+    (requirement === 'text' && !current.selectedTextFile) ||
+    (requirement === 'folders-list' && !current.selectedFolders) ||
     (requirement === 'pair' && current.selected.length !== 2) ||
+    (requirement === 'compare-pair' && !current.comparablePairKind) ||
     (requirement === 'multiple' && current.selected.length < 2) ||
     (requirement === 'exe' && current.type !== '.exe') ||
+    (requirement === 'zip' &&
+      (!current.selected.length ||
+        current.selected.length > 20 ||
+        !current.selected.every((file) => /\.zip$/i.test(file)))) ||
     (requirement === 'images' &&
       (!current.selected.length ||
         !current.selected.every((file) => /\.(jpe?g|png)$/i.test(file)))) ||
@@ -344,7 +363,7 @@ function addMenuButton(id, label, icon, requirement) {
       id === 'folders:collect'
         ? document.getElementById('folder-name')?.value
         : id === 'images:share'
-          ? Number(document.getElementById('image-size')?.value)
+          ? { maxEdge: imageSize, mode: imageMode }
           : id === 'images:pdf'
             ? { order: [...imageOrder] }
             : undefined;
@@ -473,31 +492,90 @@ function renderImageOrder(container) {
   });
 }
 
+async function renderClipboardPanel() {
+  const preview = document.createElement('div');
+  preview.className = 'clipboard-preview';
+  preview.textContent = t('Bild wird geladen …');
+  const label = document.createElement('label');
+  label.className = 'hash-label';
+  label.textContent = t('Dateiname');
+  const input = document.createElement('input');
+  input.className = 'folder-name';
+  input.maxLength = 100;
+  input.value = clipboardName;
+  input.oninput = () => {
+    clipboardName = input.value;
+    save.disabled = !clipboardName.trim();
+  };
+  label.append(input);
+  const save = document.createElement('button');
+  save.type = 'button';
+  save.className = 'menu-action';
+  save.innerHTML = `<i class="bi bi-floppy"></i><span>${t('Als PNG speichern')}</span>`;
+  save.disabled = true;
+  save.onclick = async () => {
+    save.disabled = true;
+    if (!(await window.app.action('clipboard-image', { name: clipboardName })))
+      save.disabled = false;
+  };
+  list.append(preview, label, save);
+  const image = await window.app.clipboardImagePreview();
+  if (activePanel !== 'clipboard-image' || !preview.isConnected) return;
+  if (!image) {
+    preview.textContent = t('Kein Bild in der Zwischenablage.');
+    return;
+  }
+  if (image.error) {
+    preview.textContent = t(image.error);
+    return;
+  }
+  preview.replaceChildren();
+  const thumbnail = document.createElement('img');
+  thumbnail.src = image.dataUrl;
+  thumbnail.alt = t('Vorschau des Zwischenablage-Bildes');
+  const dimensions = document.createElement('small');
+  dimensions.textContent = `${image.width} × ${image.height} px`;
+  preview.append(thumbnail, dimensions);
+  save.disabled = !clipboardName.trim();
+}
+
 function renderPanel() {
   list.replaceChildren();
   const menu = menus[activePanel];
   document.getElementById('panel-title').textContent =
-    activePanel === 'rename'
-      ? t('Massenumbenennung')
-      : activePanel === 'verify-hash'
-        ? t('SHA-256 prüfen')
-        : t(menu?.title || 'Schnell ablegen');
+    activePanel === 'clipboard-image'
+      ? t('Bild speichern')
+      : activePanel === 'rename'
+        ? t('Massenumbenennung')
+        : activePanel === 'verify-hash'
+          ? t('SHA-256 prüfen')
+          : t(menu?.title || 'Schnell ablegen');
   document.getElementById('panel-hint').textContent =
-    activePanel === 'rename'
-      ? t('Dateiendungen bleiben erhalten. Prüfe die Vorschau vor dem Umbenennen.')
-      : activePanel === 'verify-hash'
-        ? t('Vergleicht die gewählte Datei mit einer bekannten Prüfsumme.')
-        : t(menu?.hint || 'Kopieren oder verschieben – ohne Ordner zu suchen.');
-  document.getElementById('quick-count').textContent = current.loading
-    ? t('Explorer-Auswahl wird geladen …')
-    : current.selected.length
-      ? t(
-          current.selected.length === 1
-            ? '{count} Element ausgewählt'
-            : '{count} Elemente ausgewählt',
-          { count: current.selected.length },
-        )
-      : t('Keine Datei ausgewählt');
+    activePanel === 'clipboard-image'
+      ? t('Das Bild wird als neue PNG-Datei im aktuellen Ordner gespeichert.')
+      : activePanel === 'rename'
+        ? t('Dateiendungen bleiben erhalten. Prüfe die Vorschau vor dem Umbenennen.')
+        : activePanel === 'verify-hash'
+          ? t('Vergleicht die gewählte Datei mit einer bekannten Prüfsumme.')
+          : t(menu?.hint || 'Kopieren oder verschieben – ohne Ordner zu suchen.');
+  document.getElementById('quick-count').textContent =
+    activePanel === 'clipboard-image'
+      ? current.folderLabel || current.folder
+      : current.loading
+        ? t('Explorer-Auswahl wird geladen …')
+        : current.selected.length
+          ? t(
+              current.selected.length === 1
+                ? '{count} Element ausgewählt'
+                : '{count} Elemente ausgewählt',
+              { count: current.selected.length },
+            )
+          : t('Keine Datei ausgewählt');
+
+  if (activePanel === 'clipboard-image') {
+    renderClipboardPanel();
+    return;
+  }
 
   if (activePanel === 'shelf' || activePanel === 'shelf-preview') {
     renderShelfPanel();
@@ -523,6 +601,20 @@ function renderPanel() {
       preview.className = 'image-preview';
       renderImageOrder(preview);
       list.append(preview);
+      const mode = document.createElement('select');
+      mode.id = 'image-mode';
+      mode.className = 'folder-name';
+      for (const [value, label] of [
+        ['clean', 'Kleinere Kopie · Metadaten entfernen'],
+        ['original', 'Originalkopie · Metadaten behalten'],
+      ]) {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = t(label);
+        option.selected = value === imageMode;
+        mode.append(option);
+      }
+      list.append(mode);
       const size = document.createElement('select');
       size.id = 'image-size';
       size.className = 'folder-name';
@@ -536,7 +628,22 @@ function renderPanel() {
       size.onchange = () => {
         imageSize = Number(size.value);
       };
+      size.disabled = imageMode === 'original';
       list.append(size);
+      const note = document.createElement('small');
+      note.className = 'image-mode-note';
+      const updateMode = () => {
+        imageMode = mode.value;
+        size.disabled = imageMode === 'original';
+        note.textContent = t(
+          imageMode === 'original'
+            ? 'Die Originalkopie bleibt unverändert und wird nicht verkleinert.'
+            : 'Die kleinere Kopie wird neu kodiert und enthält keine Bildmetadaten.',
+        );
+      };
+      mode.onchange = updateMode;
+      updateMode();
+      list.append(note);
     }
     if (activePanel === 'folders') {
       const input = document.createElement('input');

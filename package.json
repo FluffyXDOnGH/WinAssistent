@@ -1,11 +1,11 @@
 {
   "name": "winassistent",
-  "version": "0.32.0",
+  "version": "0.33.0",
   "private": true,
   "license": "GPL-3.0-only",
   "productName": "WinAssistent",
   "author": "mambuzrrr",
-  "description": "Schnellzugriff auf Datei- und Systemaktionen unter Windows 11",
+  "description": "An action wheel for fast file and system tools on Windows 11",
   "main": "src/main.js",
   "scripts": {
     "native:build": "node scripts/ensure-native.js --rebuild",
@@ -27,7 +27,8 @@
   "dependencies": {
     "bootstrap-icons": "^1.13.2",
     "electron-updater": "^6.8.11",
-    "pdf-lib": "^1.17.1"
+    "pdf-lib": "^1.17.1",
+    "yauzl": "^2.10.0"
   },
   "build": {
     "appId": "de.winassistent.app",

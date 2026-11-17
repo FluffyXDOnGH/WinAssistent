@@ -131,6 +131,38 @@ h1 {
   overflow-wrap: anywhere;
   user-select: text;
 }
+#dialog-choices {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: auto;
+  margin-top: 12px;
+  border: 1px solid #ffffff20;
+  border-radius: 9px;
+  background: #ffffff08;
+}
+.has-choices #dialog-detail {
+  max-height: 128px;
+  flex: 0 0 auto;
+}
+#dialog-choices label {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 9px 11px;
+  border-bottom: 1px solid #ffffff0e;
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+#dialog-choices label:hover {
+  background: #ffffff0c;
+}
+#dialog-choices input {
+  flex: none;
+  margin-top: 2px;
+  accent-color: #dfdfe4;
+}
 footer {
   display: flex;
   flex: 0 0 auto;

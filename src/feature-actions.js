@@ -106,6 +106,202 @@ async function compareFiles(files) {
   };
 }
 
+function comparablePairKind(items) {
+  if (!Array.isArray(items) || items.length !== 2) return '';
+  try {
+    const stats = items.map((item) => fs.lstatSync(item));
+    if (stats.every((stat) => stat.isFile())) return 'files';
+    if (stats.every((stat) => stat.isDirectory())) return 'folders';
+  } catch {
+    // The selection may have changed since Explorer reported it.
+  }
+  return '';
+}
+
+async function scanFolderForComparison(root, limit) {
+  const entries = new Map();
+  const pending = [''];
+  let capped = false;
+  let unreadable = 0;
+  let links = 0;
+  while (pending.length && !capped) {
+    const relative = pending.pop();
+    let children;
+    try {
+      children = await fs.promises.readdir(path.join(root, relative), { withFileTypes: true });
+    } catch {
+      unreadable++;
+      continue;
+    }
+    children.sort((a, b) => a.name.localeCompare(b.name));
+    for (const child of children) {
+      if (entries.size >= limit) {
+        capped = true;
+        break;
+      }
+      const childRelative = path.join(relative, child.name);
+      let stat;
+      try {
+        stat = await fs.promises.lstat(path.join(root, childRelative));
+      } catch {
+        unreadable++;
+        continue;
+      }
+      if (stat.isSymbolicLink()) {
+        links++;
+        continue;
+      }
+      if (stat.isDirectory()) {
+        entries.set(childRelative.toLowerCase(), {
+          relative: childRelative,
+          kind: 'directory',
+        });
+        pending.push(childRelative);
+      } else if (stat.isFile()) {
+        entries.set(childRelative.toLowerCase(), {
+          relative: childRelative,
+          kind: 'file',
+          size: stat.size,
+        });
+      }
+    }
+  }
+  return { entries, capped, unreadable, links };
+}
+
+async function compareFolders(
+  folders,
+  { entryLimit = 3000, hashByteLimit = 256 * 1024 * 1024 } = {},
+) {
+  if (
+    !Array.isArray(folders) ||
+    folders.length !== 2 ||
+    folders.some((folder) => typeof folder !== 'string') ||
+    path.resolve(folders[0]).toLowerCase() === path.resolve(folders[1]).toLowerCase()
+  ) {
+    throw new Error('Bitte genau zwei verschiedene Ordner auswählen.');
+  }
+  const roots = await Promise.all(folders.map((folder) => fs.promises.lstat(folder)));
+  if (roots.some((root) => !root.isDirectory()))
+    throw new Error('Der Ordnervergleich benötigt zwei Ordner.');
+  const [left, right] = await Promise.all(
+    folders.map((folder) => scanFolderForComparison(folder, entryLimit)),
+  );
+  const leftOnly = [];
+  const rightOnly = [];
+  const leftOnlyFiles = [];
+  const rightOnlyFiles = [];
+  const changed = [];
+  const commonFiles = [];
+  let same = 0;
+  let unchecked = 0;
+  for (const [key, entry] of left.entries) {
+    const other = right.entries.get(key);
+    if (!other) {
+      leftOnly.push(entry.relative);
+      if (entry.kind === 'file') leftOnlyFiles.push(entry.relative);
+    } else if (entry.kind !== other.kind || (entry.kind === 'file' && entry.size !== other.size))
+      changed.push(entry.relative);
+    else if (entry.kind === 'file') commonFiles.push([entry, other]);
+    else same++;
+  }
+  for (const [key, entry] of right.entries) {
+    if (!left.entries.has(key)) {
+      rightOnly.push(entry.relative);
+      if (entry.kind === 'file') rightOnlyFiles.push(entry.relative);
+    }
+  }
+  commonFiles.sort((a, b) => a[0].size - b[0].size);
+  let hashedBytes = 0;
+  for (const [entry, other] of commonFiles) {
+    if (hashedBytes + entry.size * 2 > hashByteLimit) {
+      unchecked++;
+      continue;
+    }
+    hashedBytes += entry.size * 2;
+    try {
+      const hashes = await Promise.all([
+        fileHash(path.join(folders[0], entry.relative)),
+        fileHash(path.join(folders[1], other.relative)),
+      ]);
+      if (hashes[0] === hashes[1]) same++;
+      else changed.push(entry.relative);
+    } catch {
+      unchecked++;
+    }
+  }
+  for (const group of [leftOnly, rightOnly, changed]) group.sort((a, b) => a.localeCompare(b));
+  return {
+    folders,
+    leftOnly,
+    rightOnly,
+    leftOnlyFiles,
+    rightOnlyFiles,
+    changed,
+    same,
+    unchecked,
+    scanned: [left.entries.size, right.entries.size],
+    capped: left.capped || right.capped,
+    unreadable: left.unreadable + right.unreadable,
+    links: left.links + right.links,
+  };
+}
+
+async function copyMissingFiles(result, selectedIds) {
+  if (!result || !Array.isArray(selectedIds) || result.capped || result.unreadable || result.links)
+    throw new Error('Der Ordnervergleich ist unvollständig. Bitte erneut prüfen.');
+  const [left, right] = result.folders.map((folder) => path.resolve(folder));
+  const inside = (parent, child) => {
+    const relative = path.relative(parent, child);
+    return (
+      relative &&
+      !relative.startsWith(`..${path.sep}`) &&
+      relative !== '..' &&
+      !path.isAbsolute(relative)
+    );
+  };
+  if (inside(left, right) || inside(right, left))
+    throw new Error('Verschachtelte Ordner können nicht abgeglichen werden.');
+  const allowed = new Set([
+    ...result.leftOnlyFiles.map((name) => `L:${name}`),
+    ...result.rightOnlyFiles.map((name) => `R:${name}`),
+  ]);
+  const summary = { copied: 0, skipped: 0, failed: [] };
+  for (const id of new Set(selectedIds)) {
+    if (!allowed.has(id)) continue;
+    const fromLeft = id.startsWith('L:');
+    const relative = id.slice(2);
+    const sourceRoot = fromLeft ? left : right;
+    const targetRoot = fromLeft ? right : left;
+    const source = path.join(sourceRoot, relative);
+    const target = path.join(targetRoot, relative);
+    try {
+      if (!(await fs.promises.lstat(source)).isFile()) throw new Error('Quelle geändert');
+      if (!(await fs.promises.lstat(targetRoot)).isDirectory())
+        throw new Error('Zielordner geändert');
+      let current = targetRoot;
+      for (const segment of path
+        .dirname(relative)
+        .split(path.sep)
+        .filter((part) => part !== '.')) {
+        current = path.join(current, segment);
+        try {
+          await fs.promises.mkdir(current);
+        } catch (error) {
+          if (error.code !== 'EEXIST') throw error;
+        }
+        if (!(await fs.promises.lstat(current)).isDirectory()) throw new Error('Zielpfad geändert');
+      }
+      await fs.promises.copyFile(source, target, fs.constants.COPYFILE_EXCL);
+      summary.copied++;
+    } catch (error) {
+      if (error.code === 'EEXIST') summary.skipped++;
+      else summary.failed.push(relative);
+    }
+  }
+  return summary;
+}
+
 async function verifyFileHash(file, expected) {
   const hash = String(expected || '')
     .trim()
@@ -270,6 +466,9 @@ module.exports = {
   fileHash,
   fileInfo,
   compareFiles,
+  comparablePairKind,
+  compareFolders,
+  copyMissingFiles,
   verifyFileHash,
   analyzeSelection,
   inspectFolder,

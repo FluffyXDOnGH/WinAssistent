@@ -23,13 +23,25 @@ const {
   fileHash,
   fileInfo,
   compareFiles,
+  compareFolders,
+  copyMissingFiles,
+  comparablePairKind,
   verifyFileHash,
   analyzeSelection,
   inspectFolder,
   findDuplicates,
 } = require('./feature-actions');
 const { renamePlan, applyRenamePlan } = require('./rename-actions');
-const { orderImages, prepareForSharing, imagesToPdf } = require('./image-actions');
+const { isTextFile, readTextFile, firstTextDifference } = require('./text-actions');
+const { markdownPaths } = require('./clipboard-paths');
+const { folderListing } = require('./folder-listing');
+const { planZipExtraction, extractZip } = require('./zip-actions');
+const {
+  orderImages,
+  prepareForSharing,
+  saveClipboardImage,
+  imagesToPdf,
+} = require('./image-actions');
 const { createAppDialog } = require('./app-dialog');
 const { loadConfig, writeConfig, DEFAULT_HOTKEY } = require('./config');
 const { dictionaries, language, translate } = require('./i18n');
@@ -63,6 +75,7 @@ if (!hasSingleInstanceLock) {
 
 let wheel;
 let settingsWindow;
+let showWelcome = false;
 let tray;
 let config;
 let knownFolderPaths = {};
@@ -254,6 +267,7 @@ function runAsAdmin(target) {
   );
 }
 function wheelPayload(value) {
+  const clipboardImage = !clipboard.readImage().isEmpty();
   const seen = new Set();
   const destinations = [
     ...config.destinations.map((folder) => ({ path: folder, kind: 'Gespeichert' })),
@@ -274,6 +288,20 @@ function wheelPayload(value) {
     .slice(0, 12);
   return {
     ...value,
+    clipboardImage,
+    selectedFolders:
+      value.selected.length > 0 &&
+      value.selected.length <= 5 &&
+      value.selected.every((folder) => {
+        try {
+          return fs.lstatSync(folder).isDirectory();
+        } catch {
+          return false;
+        }
+      }),
+    selectedTextFile:
+      value.selectedIsFile && value.selected.length === 1 && isTextFile(value.selected[0]),
+    comparablePairKind: comparablePairKind(value.selected),
     folderLabel: folderLabel(value.folder, config.language, knownFolderPaths),
     shelfCount: shelf.length,
     destinations: destinations.map((entry) => ({
@@ -283,6 +311,7 @@ function wheelPayload(value) {
     language: config.language,
     actions: wheelActions(config.profiles, {
       ...value,
+      clipboardImage,
       destinations,
       shelfCount: shelf.length,
     }).map((action) =>
@@ -387,9 +416,17 @@ async function showWheel(hwnd, location, hoverName = '', gestureSequence = 0) {
   if (requestId !== wheelRequestId) return;
   const point = location || screen.getCursorScreenPoint();
   const display = screen.getDisplayNearestPoint(point).workArea;
+  const scale = Math.min(config.wheelScale, display.width / 520, display.height / 520);
+  const size = Math.round(520 * scale);
+  if (Math.abs(wheel.webContents.getZoomFactor() - scale) > 0.001)
+    wheel.webContents.setZoomFactor(scale);
+  if (wheel.getBounds().width !== size || wheel.getBounds().height !== size)
+    wheel.setSize(size, size);
   wheel.setPosition(
-    Math.max(display.x, Math.min(point.x - 260, display.x + display.width - 520)),
-    Math.max(display.y, Math.min(point.y - 260, display.y + display.height - 520)),
+    Math.round(Math.max(display.x, Math.min(point.x - size / 2, display.x + display.width - size))),
+    Math.round(
+      Math.max(display.y, Math.min(point.y - size / 2, display.y + display.height - size)),
+    ),
   );
   const bounds = wheel.getBounds();
   mouseBridge.setBounds(bounds.x, bounds.y, bounds.width, bounds.height);
@@ -498,6 +535,7 @@ function openSettings() {
       ...config,
       version: app.getVersion(),
       update: updateState,
+      showOnboarding: showWelcome,
     });
   });
   settingsWindow.on('maximize', () =>
@@ -554,6 +592,9 @@ function cancelTransfer() {
 }
 
 function saveConfig(next) {
+  const loginPath = loginExecutable();
+  if (next.launchAtLogin && !loginPath)
+    return { ok: false, error: 'Autostart benötigt eine installierte WinAssistent-Version.' };
   if (config.enabled) globalShortcut.unregister(config.hotkey);
   if (!globalShortcut.register(next.hotkey, showWheel)) {
     if (config.enabled) globalShortcut.register(config.hotkey, showWheel);
@@ -577,7 +618,7 @@ function saveConfig(next) {
   if (settingsWindow && !settingsWindow.isDestroyed()) {
     settingsWindow.webContents.setZoomFactor(config.settingsScale);
   }
-  app.setLoginItemSettings({ openAtLogin: config.launchAtLogin });
+  syncLoginItem();
   updateTrayMenu();
   if (settingsWindow && !settingsWindow.isDestroyed()) {
     settingsWindow.webContents.send('settings', {
@@ -587,6 +628,23 @@ function saveConfig(next) {
     });
   }
   return { ok: true };
+}
+function loginExecutable() {
+  if (app.isPackaged) return process.execPath;
+  const installed = path.join(
+    process.env.LOCALAPPDATA || path.join(app.getPath('home'), 'AppData', 'Local'),
+    'Programs',
+    'WinAssistent',
+    'WinAssistent.exe',
+  );
+  return fs.existsSync(installed) ? installed : null;
+}
+function syncLoginItem() {
+  const executable = loginExecutable();
+  app.setLoginItemSettings({
+    openAtLogin: config.launchAtLogin && !!executable,
+    ...(executable ? { path: executable } : {}),
+  });
 }
 async function openTarget(target) {
   if (target) {
@@ -718,6 +776,20 @@ async function shelfAction(command, value) {
 }
 async function perform(id, payload) {
   if (typeof id !== 'string') throw new Error('Unbekannte Aktion.');
+  if (id === 'clipboard-image') {
+    if (!wheelPayload(context).actions.some((action) => action?.id === id && action.available))
+      throw new Error('Diese Aktion ist hier nicht verfügbar.');
+    const image = clipboard.readImage();
+    const created = await saveClipboardImage(context.folder, image, payload?.name);
+    hideWheel();
+    await appDialog.show({
+      type: 'success',
+      title: 'Bild gespeichert',
+      message: path.basename(created),
+      detail: created,
+    });
+    return true;
+  }
   const directDestination = /^destination:(\d+)$/.exec(id);
   if (directDestination) {
     if (config.profiles.active !== 'default' || context.loading || context.selected.length) {
@@ -765,6 +837,7 @@ async function perform(id, payload) {
     }[group];
     if (
       !allowedAction(parent, config.profiles, context) &&
+      !(group === 'files' && allowedAction('zip-tools', config.profiles, context)) &&
       !allowedAction(id, config.profiles, context)
     )
       throw new Error('Diese Aktion ist hier nicht verfügbar.');
@@ -773,10 +846,14 @@ async function perform(id, payload) {
     if (group === 'images' && command === 'share') {
       const files = [...selected];
       hideWheel();
-      const created = await prepareForSharing(files, Number(payload) || 1600);
+      const mode = payload?.mode === 'original' ? 'original' : 'clean';
+      const created = await prepareForSharing(files, {
+        maxEdge: Number(payload?.maxEdge) || 1600,
+        mode,
+      });
       await appDialog.show({
         type: 'success',
-        title: 'Fürs Teilen vorbereitet',
+        title: mode === 'original' ? 'Originalkopie erstellt' : 'Fürs Teilen vorbereitet',
         message: tr('{count} Bilder erstellt', { count: created.length }),
         detail: created.join('\n'),
       });
@@ -805,11 +882,100 @@ async function perform(id, payload) {
       clipboard.writeText(selected[0] || folder);
     } else if (group === 'copy' && command === 'paths') {
       clipboard.writeText((selected.length ? selected : [folder]).join('\n'));
+    } else if (group === 'copy' && command === 'markdown') {
+      clipboard.writeText(markdownPaths(selected, folder));
     } else if (group === 'copy' && command === 'info') {
       clipboard.writeText(await fileInfo(selected, folder));
     } else if (group === 'files' && command === 'hash') {
       if (selected.length !== 1) throw new Error('Bitte genau eine Datei auswählen.');
       clipboard.writeText(await fileHash(selected[0]));
+    } else if (group === 'files' && command === 'contents') {
+      if (selected.length !== 1 || !context.selectedIsFile)
+        throw new Error('Bitte genau eine Textdatei auswählen.');
+      clipboard.writeText(await readTextFile(selected[0]));
+    } else if (group === 'files' && command === 'folder-list') {
+      hideWheel();
+      const options = await appDialog.show({
+        type: 'info',
+        title: 'Ordnerinhalt kopieren',
+        message: tr('{count} Ordner ausgewählt', { count: selected.length }),
+        detail: selected.join('\n'),
+        choices: [{ id: 'recursive', label: tr('Unterordner einbeziehen') }],
+        buttons: ['Vorschau', 'Abbrechen'],
+      });
+      if (options?.button !== 0) return true;
+      const listing = await folderListing(selected, options.selected.includes('recursive'));
+      const preview = await appDialog.show({
+        type: listing.skipped ? 'warning' : 'info',
+        title: 'Ordnerinhalt kopieren',
+        message: tr('{files} Dateien · {folders} Ordner', {
+          files: listing.files.toLocaleString(numberLocale()),
+          folders: listing.directories.toLocaleString(numberLocale()),
+        }),
+        detail: [
+          listing.text.split('\n').slice(0, 60).join('\n'),
+          listing.lines > 60
+            ? tr('… und {count} weitere Zeilen', { count: listing.lines - 60 })
+            : '',
+          listing.skipped
+            ? tr('{count} Verknüpfungen oder unbekannte Einträge wurden übersprungen.', {
+                count: listing.skipped,
+              })
+            : '',
+        ]
+          .filter(Boolean)
+          .join('\n\n'),
+        buttons: ['In Zwischenablage kopieren', 'Abbrechen'],
+      });
+      if (preview === 0) clipboard.writeText(listing.text);
+    } else if (group === 'files' && command === 'extract-zip') {
+      if (
+        !selected.length ||
+        selected.length > 20 ||
+        !selected.every((file) => /\.zip$/i.test(file))
+      )
+        throw new Error('Bitte 1 bis 20 ZIP-Dateien auswählen.');
+      hideWheel();
+      const plans = await planZipExtraction(selected);
+      const choice = await appDialog.show({
+        type: 'info',
+        title: 'Smart ZIP',
+        message: tr('{count} ZIP-Archive bereit', { count: plans.length }),
+        detail: plans
+          .map(
+            (plan) =>
+              `${path.basename(plan.file)} → ${plan.target}\n${tr('{count} Dateien', { count: plan.files })} · ${plan.bytes.toLocaleString(numberLocale())} ${tr('Bytes')}\n${plan.entries
+                .slice(0, 8)
+                .map((entry) => entry.name)
+                .join(
+                  '\n',
+                )}${plan.entries.length > 8 ? `\n${tr('… und {count} weitere', { count: plan.entries.length - 8 })}` : ''}`,
+          )
+          .join('\n\n'),
+        choices: plans.map((plan, index) => ({
+          id: String(index),
+          label: `${path.basename(plan.file)} → ${path.basename(plan.target)}`,
+        })),
+        buttons: ['Ausgewählte entpacken', 'Abbrechen'],
+      });
+      if (choice?.button === 0 && choice.selected.length) {
+        const created = [];
+        const failed = [];
+        for (const id of choice.selected) {
+          const plan = plans[Number(id)];
+          try {
+            created.push(await extractZip(plan));
+          } catch (error) {
+            failed.push(`${path.basename(plan.file)}: ${error.message}`);
+          }
+        }
+        await appDialog.show({
+          type: failed.length ? 'warning' : 'success',
+          title: 'Smart ZIP',
+          message: tr('{count} ZIP-Archive entpackt', { count: created.length }),
+          detail: [...created, ...failed].join('\n'),
+        });
+      }
     } else if (group === 'files' && command === 'verify-hash') {
       if (selected.length !== 1) throw new Error('Bitte genau eine Datei auswählen.');
       const result = await verifyFileHash(selected[0], payload);
@@ -821,19 +987,139 @@ async function perform(id, payload) {
         detail: `${path.basename(selected[0])}\n\n${tr('Erwartet:')}\n${result.expected}\n\n${tr('Berechnet:')}\n${result.actual}`,
       });
     } else if (group === 'files' && command === 'compare') {
-      const result = await compareFiles(selected);
+      const kind = comparablePairKind(selected);
+      if (!kind) throw new Error('Bitte zwei Dateien oder zwei Ordner auswählen.');
       hideWheel();
+      if (kind === 'folders') {
+        const result = await compareFolders(selected);
+        const uncertainOnly = result.capped || result.unreadable > 0 || result.links > 0;
+        const incomplete = uncertainOnly || result.unchecked > 0;
+        const different = result.changed.length + result.leftOnly.length + result.rightOnly.length;
+        const section = (title, items) =>
+          items.length
+            ? `${title} (${items.length.toLocaleString(numberLocale())})\n${items.slice(0, 15).join('\n')}${items.length > 15 ? `\n${tr('… und {count} weitere', { count: items.length - 15 })}` : ''}`
+            : '';
+        const notes = [
+          result.capped
+            ? tr('Mehr als 3.000 Einträge pro Ordner. Die Liste ist unvollständig.')
+            : '',
+          result.unreadable
+            ? tr('{count} Einträge konnten nicht gelesen werden.', { count: result.unreadable })
+            : '',
+          result.links
+            ? tr('{count} Verknüpfungen wurden nicht verfolgt.', { count: result.links })
+            : '',
+          result.unchecked
+            ? tr('{count} gleich große Dateien wurden nicht inhaltlich geprüft.', {
+                count: result.unchecked,
+              })
+            : '',
+        ].filter(Boolean);
+        const choices = uncertainOnly
+          ? []
+          : [
+              ...result.leftOnlyFiles.map((name) => ({
+                id: `L:${name}`,
+                label: `${tr('Links → Rechts')}  ·  ${name}`,
+              })),
+              ...result.rightOnlyFiles.map((name) => ({
+                id: `R:${name}`,
+                label: `${tr('Rechts → Links')}  ·  ${name}`,
+              })),
+            ];
+        const selection = await appDialog.show({
+          type: incomplete ? 'warning' : different ? 'info' : 'success',
+          title: 'Ordner vergleichen',
+          message:
+            !different && !incomplete
+              ? 'Ordner sind inhaltlich identisch'
+              : tr('{changed} geändert · {left} nur links · {right} nur rechts', {
+                  changed: result.changed.length.toLocaleString(numberLocale()),
+                  left: result.leftOnly.length.toLocaleString(numberLocale()),
+                  right: result.rightOnly.length.toLocaleString(numberLocale()),
+                }),
+          detail: [
+            `${tr('Links:')} ${selected[0]}\n${tr('Rechts:')} ${selected[1]}`,
+            ...notes,
+            section(tr('Geändert'), result.changed),
+            ...(choices.length
+              ? [
+                  tr(
+                    'Fehlende Dateien zum Kopieren auswählen. Vorhandene Dateien bleiben unverändert.',
+                  ),
+                ]
+              : [
+                  section(
+                    tr(uncertainOnly ? 'Möglicherweise nur links' : 'Nur links'),
+                    result.leftOnly,
+                  ),
+                  section(
+                    tr(uncertainOnly ? 'Möglicherweise nur rechts' : 'Nur rechts'),
+                    result.rightOnly,
+                  ),
+                ]),
+          ]
+            .filter(Boolean)
+            .join('\n\n'),
+          choices,
+          buttons: choices.length ? ['Ausgewählte kopieren', 'Schließen'] : ['OK'],
+        });
+        if (selection?.button === 0 && selection.selected.length) {
+          const copied = await copyMissingFiles(result, selection.selected);
+          await appDialog.show({
+            type: copied.failed.length ? 'warning' : 'success',
+            title: 'Ordner abgleichen',
+            message: tr(copied.copied === 1 ? '{count} Datei kopiert' : '{count} Dateien kopiert', {
+              count: copied.copied.toLocaleString(numberLocale()),
+            }),
+            detail: [
+              copied.skipped
+                ? tr('{count} bereits vorhanden – nicht überschrieben.', { count: copied.skipped })
+                : '',
+              copied.failed.length
+                ? `${tr('Nicht kopiert:')}\n${copied.failed.slice(0, 20).join('\n')}`
+                : '',
+            ]
+              .filter(Boolean)
+              .join('\n\n'),
+          });
+        }
+        return true;
+      }
+      const result = await compareFiles(selected);
+      const difference = result.identical ? null : await firstTextDifference(selected);
+      let preview = '';
+      if (difference?.kind === 'difference') {
+        const snippet = (value) =>
+          value === null ? tr('Dateiende') : value === '' ? tr('Leere Zeile') : `«${value}»`;
+        preview = [
+          tr('Erste Abweichung: Zeile {line}, Spalte {column}', difference),
+          `${path.basename(selected[0])}: ${snippet(difference.left)}`,
+          `${path.basename(selected[1])}: ${snippet(difference.right)}`,
+        ].join('\n');
+      } else if (difference?.kind === 'format-only') {
+        preview = tr('Textinhalt gleich; Kodierung oder Zeilenenden unterscheiden sich.');
+      } else if (difference?.kind === 'unavailable') {
+        preview = tr('Textvorschau nicht verfügbar: {reason}', {
+          reason: tr(difference.reason),
+        });
+      }
       await appDialog.show({
         type: 'info',
         title: 'Dateien vergleichen',
         message: result.identical
           ? 'Dateien sind inhaltlich identisch'
           : 'Dateien unterscheiden sich',
-        detail: result.files
-          .map(
-            (file, index) =>
-              `${path.basename(file)}\n${file}\n${result.sizes[index].toLocaleString(numberLocale())} ${tr('Bytes')} · ${tr('Geändert:')} ${result.modified[index].toLocaleString(numberLocale())}\nSHA-256: ${result.hashes[index]}`,
-          )
+        detail: [
+          preview,
+          result.files
+            .map(
+              (file, index) =>
+                `${path.basename(file)}\n${file}\n${result.sizes[index].toLocaleString(numberLocale())} ${tr('Bytes')} · ${tr('Geändert:')} ${result.modified[index].toLocaleString(numberLocale())}\nSHA-256: ${result.hashes[index]}`,
+            )
+            .join('\n\n'),
+        ]
+          .filter(Boolean)
           .join('\n\n'),
       });
     } else if (group === 'files' && command === 'size') {
@@ -1031,6 +1317,7 @@ if (hasSingleInstanceLock)
     knownFolderPaths = Object.fromEntries(
       Object.keys(knownFolderNames).map((id) => [id, app.getPath(id)]),
     );
+    showWelcome = !fs.existsSync(configPath());
     config = loadConfig(configPath(), [
       app.getPath('downloads'),
       app.getPath('documents'),
@@ -1051,7 +1338,7 @@ if (hasSingleInstanceLock)
         'Hotkey belegt',
         `${config.hotkey} ist bereits in Verwendung. Bitte in den Einstellungen ändern.`,
       );
-    app.setLoginItemSettings({ openAtLogin: config.launchAtLogin });
+    syncLoginItem();
     ipcMain.on('close-wheel', (event) => {
       if (event.sender === wheel.webContents) hideWheel();
     });
@@ -1175,6 +1462,21 @@ if (hasSingleInstanceLock)
         return false;
       }
     });
+    ipcMain.handle('clipboard-image-preview', (event) => {
+      if (event.sender !== wheel.webContents) return null;
+      const image = clipboard.readImage();
+      if (image.isEmpty()) return null;
+      const size = image.getSize();
+      if (!size.width || !size.height) return null;
+      if (size.width * size.height > 50_000_000)
+        return { error: 'Das Bild in der Zwischenablage ist zu groß.' };
+      const scale = Math.min(1, 250 / Math.max(size.width, size.height));
+      const preview =
+        scale < 1
+          ? image.resize({ width: Math.max(1, Math.round(size.width * scale)), quality: 'good' })
+          : image;
+      return { width: size.width, height: size.height, dataUrl: preview.toDataURL() };
+    });
     ipcMain.handle('shelf-action', async (event, command, value) => {
       if (event.sender !== wheel.webContents) return { error: 'Nicht verfügbar.' };
       try {
@@ -1240,6 +1542,7 @@ if (hasSingleInstanceLock)
         pauseInFullscreen: value.pauseInFullscreen === true,
         language: language(value.language),
         settingsScale: [1, 1.15, 1.3].includes(value.settingsScale) ? value.settingsScale : 1,
+        wheelScale: [1, 1.15, 1.3].includes(value.wheelScale) ? value.wheelScale : 1.15,
         profiles: {
           ...config.profiles,
           layouts: { ...config.profiles.layouts, custom: customSlots },
@@ -1264,6 +1567,22 @@ if (hasSingleInstanceLock)
       };
       return saveConfig(next);
     });
+    ipcMain.handle('complete-onboarding', (event) => {
+      if (!isSettingsSender(event)) return { ok: false, error: 'Nicht verfügbar.' };
+      try {
+        const next = { ...config, onboardingSeen: true };
+        writeConfig(configPath(), next);
+        config = next;
+        showWelcome = false;
+        return { ok: true };
+      } catch (error) {
+        return {
+          ok: false,
+          error: `Einstiegshilfe konnte nicht gespeichert werden: ${error.message}`,
+        };
+      }
+    });
+    if (showWelcome) openSettings();
   });
 app.on('window-all-closed', () => {});
 app.on('will-quit', () => {

@@ -22,6 +22,7 @@ function normalizeConfig(value, defaultDestinations) {
     pauseInFullscreen: stored.pauseInFullscreen === true,
     language: language(stored.language),
     settingsScale: [1, 1.15, 1.3].includes(stored.settingsScale) ? stored.settingsScale : 1,
+    wheelScale: [1, 1.15, 1.3].includes(stored.wheelScale) ? stored.wheelScale : 1.15,
     destinations,
     recentDestinations: Array.isArray(stored.recentDestinations)
       ? stored.recentDestinations

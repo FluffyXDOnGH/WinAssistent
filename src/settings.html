@@ -106,6 +106,16 @@
               <i class="bi bi-command"></i> Aktionsrad
               <span class="nav-new" id="wheel-new" hidden>NEW</span>
             </button>
+            <button
+              class="nav"
+              id="tab-welcome"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="view-welcome"
+            >
+              <i class="bi bi-signpost-2"></i> Erste Schritte
+            </button>
           </nav>
           <div class="aside-foot" id="app-version"></div>
         </aside>
@@ -223,6 +233,19 @@
                 <p>Profil und Aktionen für die acht Richtungen.</p>
               </div>
             </header>
+            <h2>Darstellung</h2>
+            <div class="setting">
+              <div class="setting-symbol"><i class="bi bi-arrows-angle-expand"></i></div>
+              <div class="setting-copy">
+                <strong>Radgröße</strong>
+                <p>Vergrößert das Rad und die anklickbaren Kacheln.</p>
+              </div>
+              <select id="wheel-scale" aria-label="Radgröße">
+                <option value="1">Kompakt · 100 %</option>
+                <option value="1.15">Standard · 115 %</option>
+                <option value="1.3">Groß · 130 %</option>
+              </select>
+            </div>
             <h2>Profil</h2>
             <div class="setting">
               <div class="setting-symbol"><i class="bi bi-grid-3x3-gap"></i></div>
@@ -264,7 +287,62 @@
               </p>
             </div>
           </section>
-          <div class="footer">
+          <section
+            id="view-welcome"
+            class="settings-view"
+            role="tabpanel"
+            aria-labelledby="tab-welcome"
+            hidden
+          >
+            <header>
+              <div>
+                <h1>Erste Schritte</h1>
+                <p>Drei Schritte zum Aktionsrad.</p>
+              </div>
+            </header>
+            <div class="welcome-steps">
+              <div class="welcome-step">
+                <span class="welcome-number">01</span>
+                <div>
+                  <strong>Rad öffnen</strong>
+                  <p>
+                    Drücke <kbd id="welcome-hotkey">Control+Alt+Space</kbd> oder Alt + Rechtsklick.
+                  </p>
+                </div>
+              </div>
+              <div class="welcome-step">
+                <span class="welcome-number">02</span>
+                <div>
+                  <strong>Datei oder Ordner auswählen</strong>
+                  <p>
+                    Markiere etwas im Explorer oder auf dem Desktop. Das Rad zeigt passende
+                    Aktionen.
+                  </p>
+                </div>
+              </div>
+              <div class="welcome-step">
+                <span class="welcome-number">03</span>
+                <div>
+                  <strong>Aktion anklicken</strong>
+                  <p>
+                    Klicke eine Kachel an. Mit Esc oder einem Klick außerhalb schließt du das Rad.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="welcome-example">
+              <i class="bi bi-folder-symlink" aria-hidden="true"></i>
+              <div>
+                <strong>Ein Beispiel: Schnell ablegen</strong>
+                <p>
+                  Markiere eine Datei und wähle einen Zielordner im Rad. Du kannst sie dorthin
+                  kopieren oder verschieben.
+                </p>
+              </div>
+            </div>
+            <button id="welcome-done" class="save" type="button">Verstanden</button>
+          </section>
+          <div class="footer" id="settings-footer">
             <button id="save" class="save">Speichern</button>
           </div>
         </main>

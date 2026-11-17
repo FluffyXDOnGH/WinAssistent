@@ -67,27 +67,58 @@ function decodedImage(file) {
   return { image, size };
 }
 
-async function prepareForSharing(files, maxEdge = 1600) {
+async function prepareForSharing(files, options = {}) {
   await checkedImages(files);
-  if (![1200, 1600, 2048].includes(maxEdge)) throw new Error('Invalid image size.');
+  const { maxEdge = 1600, mode = 'clean' } = options;
+  if (!['clean', 'original'].includes(mode)) throw new Error('Invalid image export mode.');
+  if (mode === 'clean' && ![1200, 1600, 2048].includes(maxEdge))
+    throw new Error('Invalid image size.');
   const created = [];
   for (const file of files) {
+    const extension = path.extname(file).toLowerCase();
+    const target = await uniquePath(
+      path.dirname(file),
+      `${path.parse(file).name}-${mode === 'original' ? 'original' : 'share'}`,
+      extension,
+    );
+    if (mode === 'original') {
+      await fs.copyFile(file, target, fs.constants.COPYFILE_EXCL);
+      created.push(target);
+      continue;
+    }
     const { image, size } = decodedImage(file);
     const factor = Math.min(1, maxEdge / Math.max(size.width, size.height));
     const resized =
       factor < 1
         ? image.resize({ width: Math.max(1, Math.round(size.width * factor)), quality: 'best' })
         : image;
-    const extension = path.extname(file).toLowerCase();
     const bytes = extension === '.png' ? resized.toPNG() : resized.toJPEG(82);
-    const target = await uniquePath(
-      path.dirname(file),
-      `${path.parse(file).name}-share`,
-      extension,
-    );
     created.push(await writeNewFile(target, bytes));
   }
   return created;
+}
+
+async function saveClipboardImage(folder, image, name) {
+  if (!image || image.isEmpty()) throw new Error('Kein Bild in der Zwischenablage.');
+  if (!(await fs.stat(folder)).isDirectory()) throw new Error('Zuerst einen Ordner öffnen.');
+  const stem = String(name || '')
+    .trim()
+    .replace(/\.png$/i, '');
+  if (
+    !stem ||
+    stem.length > 100 ||
+    /[<>:"/\\|?*\x00-\x1f]/.test(stem) ||
+    /[. ]$/.test(stem) ||
+    /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(stem)
+  )
+    throw new Error('Gültigen Dateinamen eingeben.');
+  const { width, height } = image.getSize();
+  if (!width || !height || width * height > 50_000_000)
+    throw new Error('Das Bild in der Zwischenablage ist zu groß.');
+  const bytes = image.toPNG();
+  if (bytes.length > 100 * 1024 * 1024)
+    throw new Error('Das Bild in der Zwischenablage ist zu groß.');
+  return writeNewFile(await uniquePath(folder, stem, '.png'), bytes);
 }
 
 async function imagesToPdf(files) {
@@ -112,4 +143,10 @@ async function imagesToPdf(files) {
   return writeNewFile(target, await document.save());
 }
 
-module.exports = { isSupportedImage, orderImages, prepareForSharing, imagesToPdf };
+module.exports = {
+  isSupportedImage,
+  orderImages,
+  prepareForSharing,
+  saveClipboardImage,
+  imagesToPdf,
+};

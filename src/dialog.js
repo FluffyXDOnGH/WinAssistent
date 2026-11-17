@@ -5,10 +5,11 @@ const icons = {
   success: ['bi-check-lg', 'ERLEDIGT'],
 };
 
-window.app.onAppDialog(({ language, title, message, detail, type, buttons }) => {
+window.app.onAppDialog(({ language, title, message, detail, type, buttons, choices = [] }) => {
   window.localize.setLanguage(language);
   const t = window.localize.t;
   document.body.dataset.type = type;
+  document.body.classList.toggle('has-choices', choices.length > 0);
   document.getElementById('dialog-title').textContent = t(title);
   document.getElementById('dialog-message').textContent = t(message);
   document.getElementById('dialog-symbol').querySelector('i').className = `bi ${icons[type][0]}`;
@@ -16,6 +17,19 @@ window.app.onAppDialog(({ language, title, message, detail, type, buttons }) => 
   const detailBox = document.getElementById('dialog-detail');
   detailBox.hidden = !detail;
   detailBox.textContent = detail;
+  const choicesBox = document.getElementById('dialog-choices');
+  choicesBox.hidden = !choices.length;
+  choicesBox.replaceChildren();
+  choices.forEach((choice) => {
+    const row = document.createElement('label');
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.value = choice.id;
+    const text = document.createElement('span');
+    text.textContent = choice.label;
+    row.append(checkbox, text);
+    choicesBox.append(row);
+  });
   const footer = document.getElementById('dialog-buttons');
   footer.replaceChildren();
   buttons.forEach((label, index) => {
@@ -23,7 +37,11 @@ window.app.onAppDialog(({ language, title, message, detail, type, buttons }) => 
     button.type = 'button';
     button.textContent = t(label);
     button.className = index === 0 ? 'primary' : 'secondary';
-    button.onclick = () => window.app.closeAppDialog(index);
+    button.onclick = () =>
+      window.app.closeAppDialog(
+        index,
+        Array.from(choicesBox.querySelectorAll('input:checked'), (input) => input.value),
+      );
     footer.append(button);
   });
   footer.querySelector('button')?.focus();

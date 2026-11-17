@@ -178,6 +178,7 @@ const settingsMain = document.querySelector('.settings-page main');
 const tabs = {
   general: document.getElementById('tab-general'),
   wheel: document.getElementById('tab-wheel'),
+  welcome: document.getElementById('tab-welcome'),
 };
 function showTab(name) {
   for (const [key, button] of Object.entries(tabs)) {
@@ -187,9 +188,16 @@ function showTab(name) {
     document.getElementById(`view-${key}`).hidden = !active;
   }
   settingsMain.scrollTop = 0;
+  document.getElementById('settings-footer').hidden = name === 'welcome';
 }
 tabs.general.onclick = () => showTab('general');
 tabs.wheel.onclick = () => showTab('wheel');
+tabs.welcome.onclick = () => showTab('welcome');
+document.getElementById('welcome-done').onclick = async () => {
+  const result = await window.app.completeOnboarding();
+  if (result.ok) showTab('general');
+  else showToast(t(result.error), 'error');
+};
 function renderPrograms() {
   programList.replaceChildren();
   programs.forEach((program, index) => {
@@ -374,7 +382,9 @@ window.app.onSettings((config) => {
   languageSelect.value = config.language;
   enabled.checked = config.enabled !== false;
   hotkey.value = config.hotkey;
+  document.getElementById('welcome-hotkey').textContent = config.hotkey;
   document.getElementById('settings-scale').value = String(config.settingsScale || 1);
+  document.getElementById('wheel-scale').value = String(config.wheelScale || 1.15);
   startup.checked = config.launchAtLogin;
   pauseFullscreen.checked = config.pauseInFullscreen === true;
   profile.value = config.profiles?.active || 'default';
@@ -390,7 +400,7 @@ window.app.onSettings((config) => {
   window.refreshSelectMenus();
   updateActivityLabel();
   if (!initialTabShown) {
-    showTab('general');
+    showTab(config.showOnboarding ? 'welcome' : 'general');
     initialTabShown = true;
   }
 });
@@ -460,6 +470,7 @@ document.getElementById('save').onclick = async () => {
     enabled: enabled.checked,
     hotkey: hotkey.value.trim(),
     settingsScale: Number(document.getElementById('settings-scale').value),
+    wheelScale: Number(document.getElementById('wheel-scale').value),
     launchAtLogin: startup.checked,
     pauseInFullscreen: pauseFullscreen.checked,
     language: languageSelect.value,

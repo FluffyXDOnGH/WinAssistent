@@ -13,8 +13,8 @@ function createAppDialog(iconPath, getLanguage = () => 'en') {
         ? request.parent
         : undefined;
     const window = new BrowserWindow({
-      width: 480,
-      height: 380,
+      width: request.choices.length ? 620 : 480,
+      height: request.choices.length ? 540 : 380,
       frame: false,
       transparent: true,
       resizable: false,
@@ -32,7 +32,12 @@ function createAppDialog(iconPath, getLanguage = () => 'en') {
         nodeIntegration: false,
       },
     });
-    active = { window, resolve: request.resolve, cancel: request.buttons.length - 1 };
+    active = {
+      window,
+      resolve: request.resolve,
+      cancel: request.buttons.length - 1,
+      choices: request.choices,
+    };
     window.on('closed', () => {
       const finished = active;
       active = null;
@@ -47,6 +52,7 @@ function createAppDialog(iconPath, getLanguage = () => 'en') {
         detail: request.detail,
         type: request.type,
         buttons: request.buttons,
+        choices: request.choices,
       });
       window.show();
       window.focus();
@@ -54,13 +60,30 @@ function createAppDialog(iconPath, getLanguage = () => 'en') {
     window.loadFile(path.join(__dirname, 'dialog.html')).catch(() => window.close());
   }
 
-  ipcMain.on('app-dialog-close', (event, index) => {
+  ipcMain.on('app-dialog-close', (event, index, selected) => {
     if (!active || event.sender !== active.window.webContents) return;
-    if (Number.isInteger(index) && index >= 0 && index <= active.cancel) active.result = index;
+    if (Number.isInteger(index) && index >= 0 && index <= active.cancel) {
+      active.result = active.choices.length
+        ? {
+            button: index,
+            selected: Array.isArray(selected)
+              ? selected.filter((id) => active.choices.some((choice) => choice.id === id))
+              : [],
+          }
+        : index;
+    }
     active.window.close();
   });
 
-  function show({ title, message, detail = '', type = 'info', buttons = ['OK'], parent } = {}) {
+  function show({
+    title,
+    message,
+    detail = '',
+    type = 'info',
+    buttons = ['OK'],
+    choices = [],
+    parent,
+  } = {}) {
     return new Promise((resolve) => {
       queue.push({
         title: String(title || 'WinAssistent'),
@@ -68,6 +91,13 @@ function createAppDialog(iconPath, getLanguage = () => 'en') {
         detail: String(detail || ''),
         type: ['info', 'error', 'warning', 'success'].includes(type) ? type : 'info',
         buttons: Array.isArray(buttons) && buttons.length && buttons.length <= 2 ? buttons : ['OK'],
+        choices: Array.isArray(choices)
+          ? choices
+              .filter(
+                (choice) => typeof choice?.id === 'string' && typeof choice?.label === 'string',
+              )
+              .slice(0, 3000)
+          : [],
         parent,
         resolve,
       });

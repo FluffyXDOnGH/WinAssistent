@@ -5,10 +5,13 @@ const { version } = require('../package.json');
 const dist = path.resolve(__dirname, '..', 'dist');
 const currentInstaller = `WinAssistent-Setup-${version}.exe`;
 const currentBlockmap = `${currentInstaller}.blockmap`;
-const retainedVersion = process.env.WINASSISTENT_KEEP_INSTALLER;
-const retainedInstaller = /^\d+\.\d+\.\d+$/.test(retainedVersion || '')
-  ? `WinAssistent-Setup-${retainedVersion}.exe`
-  : '';
+const retainedInstallers = new Set(
+  (process.env.WINASSISTENT_KEEP_INSTALLER || '')
+    .split(',')
+    .map((version) => version.trim())
+    .filter((version) => /^\d+\.\d+\.\d+$/.test(version))
+    .map((version) => `WinAssistent-Setup-${version}.exe`),
+);
 
 if (!fs.existsSync(path.join(dist, currentInstaller))) {
   throw new Error(`Installer fehlt: ${currentInstaller}`);
@@ -25,8 +28,8 @@ for (const entry of fs.readdirSync(dist, { withFileTypes: true })) {
   if (
     entry.name === currentInstaller ||
     entry.name === currentBlockmap ||
-    entry.name === retainedInstaller ||
-    entry.name === `${retainedInstaller}.blockmap` ||
+    retainedInstallers.has(entry.name) ||
+    [...retainedInstallers].some((name) => entry.name === `${name}.blockmap`) ||
     (currentManifest && ['latest.yml', 'latest.yml.sig'].includes(entry.name))
   )
     continue;
