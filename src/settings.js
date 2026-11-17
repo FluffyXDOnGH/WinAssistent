@@ -77,14 +77,15 @@ const wheelNewKey = 'wheel-news-0.31';
 wheelNew.hidden = localStorage.getItem(wheelNewKey) === 'seen';
 let wheelNewTimer;
 const wheelTab = document.getElementById('tab-wheel');
-wheelTab.addEventListener('mouseenter', () => {
-  if (wheelNew.hidden) return;
+function dismissWheelNewSoon() {
+  if (wheelNew.hidden || wheelNewTimer) return;
   wheelNewTimer = setTimeout(() => {
     wheelNew.hidden = true;
     localStorage.setItem(wheelNewKey, 'seen');
   }, 5000);
-});
-wheelTab.addEventListener('mouseleave', () => clearTimeout(wheelNewTimer));
+}
+wheelTab.addEventListener('mouseleave', dismissWheelNewSoon);
+wheelTab.addEventListener('click', dismissWheelNewSoon);
 let toastTimer;
 function showToast(message, tone = 'success') {
   clearTimeout(toastTimer);

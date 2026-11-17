@@ -215,6 +215,18 @@ body {
     opacity 0.25s,
     filter 0.25s;
 }
+.segment.is-new:not(:disabled) > span::after {
+  content: 'NEW';
+  position: absolute;
+  right: 6px;
+  top: 5px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: #57c88a;
+  color: #10231a;
+  font-size: 9px;
+  font-weight: 800;
+}
 .segment:before {
   content: '';
   position: absolute;
@@ -1719,8 +1731,17 @@ h2 {
   cursor: default;
 }
 .titlebar .github-link:hover {
-  background: rgb(var(--c) / 0.1);
+  background: transparent;
   color: rgb(var(--c));
+}
+.titlebar .github-link:hover i {
+  filter: drop-shadow(0 0 5px rgb(var(--c) / 0.75));
+  transform: scale(1.12);
+}
+.titlebar .github-link i {
+  transition:
+    transform 0.18s ease,
+    filter 0.18s ease;
 }
 .titlebar-controls {
   display: flex;

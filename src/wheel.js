@@ -3,6 +3,15 @@ const t = window.localize.t;
 const panel = document.getElementById('quick-panel');
 const list = document.getElementById('quick-destinations');
 const slots = [];
+const folderNewsKey = 'wheel-news-folder-insights-0.31';
+let folderNewsTimer;
+function dismissFolderNewsSoon() {
+  if (folderNewsTimer || localStorage.getItem(folderNewsKey) === 'seen') return;
+  folderNewsTimer = setTimeout(() => {
+    localStorage.setItem(folderNewsKey, 'seen');
+    document.querySelectorAll('.segment.is-new').forEach((item) => item.classList.remove('is-new'));
+  }, 5000);
+}
 let current = { selected: [], destinations: [], loading: true, type: '' };
 let activePanel = '';
 let transferState = null;
@@ -111,6 +120,7 @@ function createSlot(index) {
   button.addEventListener('click', async (event) => {
     event.stopPropagation();
     if (button.disabled) return;
+    if (button.dataset.action === 'folder-insights') dismissFolderNewsSoon();
     if (button.dataset.submenu) {
       activePanel = button.dataset.submenu;
       renderPanel();
@@ -120,6 +130,9 @@ function createSlot(index) {
     button.classList.add('activated');
     const succeeded = await window.app.action(button.dataset.action);
     if (!succeeded) button.classList.remove('activated');
+  });
+  button.addEventListener('mouseleave', () => {
+    if (button.dataset.action === 'folder-insights') dismissFolderNewsSoon();
   });
 
   box.append(button);
@@ -137,6 +150,10 @@ function updateActions(actions) {
     spoke.hidden = !action;
     if (!action) return;
     button.dataset.action = action.id;
+    button.classList.toggle(
+      'is-new',
+      action.id === 'folder-insights' && localStorage.getItem(folderNewsKey) !== 'seen',
+    );
     button.dataset.submenu = action.submenu || '';
     button.disabled = !action.available;
     button.title = action.available ? action.description : action.reason;
