@@ -350,7 +350,8 @@ async function showWheel(hwnd, location, hoverName = '', gestureSequence = 0) {
   if (!config.enabled) return;
   if (gestureSequence && gesture?.sequence !== gestureSequence) return;
   if (!gestureSequence) gesture = null;
-  if (typeof hwnd !== 'number') hwnd = mouseBridge.foreground();
+  if (typeof hwnd !== 'number')
+    hwnd = mouseBridge.desktopUnderCursor() || mouseBridge.foreground();
   const requestId = ++wheelRequestId;
   if (gestureSequence) gesture.requestId = requestId;
   await wheelReady;

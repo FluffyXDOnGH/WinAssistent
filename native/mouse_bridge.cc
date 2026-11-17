@@ -292,6 +292,20 @@ Napi::Value Foreground(const Napi::CallbackInfo& info) {
   return Napi::Number::New(info.Env(), static_cast<double>(window));
 }
 
+Napi::Value DesktopUnderCursor(const Napi::CallbackInfo& info) {
+  POINT point{};
+  if (!GetCursorPos(&point)) return Napi::Number::New(info.Env(), 0);
+  HWND target = WindowFromPoint(point);
+  HWND root = target ? GetAncestor(target, GA_ROOT) : nullptr;
+  if (root == GetDesktopWindow()) root = GetShellWindow();
+  wchar_t className[64]{};
+  if (root) GetClassNameW(root, className, 64);
+  const bool desktop = root &&
+      (root == GetShellWindow() || wcscmp(className, L"Progman") == 0 ||
+       wcscmp(className, L"WorkerW") == 0);
+  return Napi::Number::New(info.Env(), desktop ? static_cast<double>(reinterpret_cast<LONG_PTR>(root)) : 0);
+}
+
 Napi::Value OpenTerminal(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   if (info.Length() != 1 || !info[0].IsString()) {
@@ -424,6 +438,7 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   exports.Set("setPauseInFullscreen", Napi::Function::New(env, SetPauseInFullscreen));
   exports.Set("setBounds", Napi::Function::New(env, SetBounds));
   exports.Set("foreground", Napi::Function::New(env, Foreground));
+  exports.Set("desktopUnderCursor", Napi::Function::New(env, DesktopUnderCursor));
   exports.Set("openTerminal", Napi::Function::New(env, OpenTerminal));
   exports.Set("copyFile", Napi::Function::New(env, CopyFileWithProgress));
   exports.Set("cancelCopy", Napi::Function::New(env, CancelCurrentCopy));

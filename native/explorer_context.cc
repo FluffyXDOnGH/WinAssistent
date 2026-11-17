@@ -71,8 +71,7 @@ bool IsDesktopWindow(LONG_PTR window) {
   if (handle == GetShellWindow()) return true;
   wchar_t className[64]{};
   if (!GetClassNameW(handle, className, 64)) return false;
-  return (wcscmp(className, L"Progman") == 0 || wcscmp(className, L"WorkerW") == 0) &&
-         FindWindowExW(handle, nullptr, L"SHELLDLL_DefView", nullptr);
+  return wcscmp(className, L"Progman") == 0 || wcscmp(className, L"WorkerW") == 0;
 }
 
 std::wstring KnownFolder(REFKNOWNFOLDERID id) {
