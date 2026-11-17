@@ -68,6 +68,7 @@ let wheelRequestId = 0;
 let wheelReady;
 let transferInProgress = false;
 let transferCancelRequested = false;
+let shelf = [];
 let renameInProgress = false;
 let gesture = null;
 const updateState = { phase: 'unconfigured', version: '', progress: 0, error: '' };
@@ -257,9 +258,14 @@ function wheelPayload(value) {
     .slice(0, 12);
   return {
     ...value,
+    shelfCount: shelf.length,
     destinations,
     language: config.language,
-    actions: wheelActions(config.profiles, { ...value, destinations }).map((action) =>
+    actions: wheelActions(config.profiles, {
+      ...value,
+      destinations,
+      shelfCount: shelf.length,
+    }).map((action) =>
       action
         ? {
             ...action,
@@ -558,9 +564,9 @@ async function openTarget(target) {
     if (error) throw new Error(error);
   }
 }
-async function quickFile(mode, index) {
+async function quickFile(mode, index, selectedOverride = null) {
   if (transferInProgress) throw new Error('Eine Dateiübertragung läuft bereits.');
-  if (!allowedAction('quick', config.profiles, context)) {
+  if (!selectedOverride && !allowedAction('quick', config.profiles, context)) {
     throw new Error('Bitte zuerst eine Datei oder einen Ordner im Explorer auswählen.');
   }
   const destinations = wheelPayload(context).destinations;
@@ -578,7 +584,7 @@ async function quickFile(mode, index) {
     }
   };
   try {
-    const selected = [...context.selected];
+    const selected = selectedOverride ? [...selectedOverride] : [...context.selected];
     sendTransfer('start', { total: selected.length, completed: [], failed: [] });
     const report = await transferFiles(
       mode,
@@ -588,6 +594,11 @@ async function quickFile(mode, index) {
       mouseBridge.copyFile,
       () => transferCancelRequested,
     );
+    if (selectedOverride) {
+      const completed = new Set(report.completedSources.map((item) => item.toLowerCase()));
+      shelf = shelf.filter((item) => !completed.has(item.toLowerCase()));
+      if (wheel.isVisible()) wheel.webContents.send('context', wheelPayload(context));
+    }
     if (report.completed.length) {
       config.recentDestinations = [
         destination,
@@ -620,6 +631,60 @@ async function quickFile(mode, index) {
     transferCancelRequested = false;
     updateTrayMenu();
   }
+}
+async function shelfAction(command, value) {
+  if (command === 'add') {
+    if (context.loading || !context.selected.length) throw new Error('Keine Auswahl vorhanden.');
+    const entries = [...shelf];
+    for (const source of context.selected) {
+      const resolved = path.resolve(source);
+      if (entries.some((item) => item.toLowerCase() === resolved.toLowerCase())) continue;
+      if (entries.length >= 30) throw new Error('Die Dateiablage fasst bis zu 30 Elemente.');
+      const stat = await fs.promises.lstat(resolved);
+      if (!stat.isFile() && !stat.isDirectory()) continue;
+      if (entries.some((item) => resolved.toLowerCase().startsWith(item.toLowerCase() + path.sep)))
+        continue;
+      if (stat.isDirectory()) {
+        for (let index = entries.length - 1; index >= 0; index--) {
+          if (entries[index].toLowerCase().startsWith(resolved.toLowerCase() + path.sep))
+            entries.splice(index, 1);
+        }
+      }
+      entries.push(resolved);
+    }
+    shelf = entries;
+  } else if (command === 'remove') {
+    if (!Number.isInteger(value) || value < 0 || value >= shelf.length)
+      throw new Error('Ungültiger Eintrag.');
+    shelf.splice(value, 1);
+  } else if (command === 'clear') {
+    shelf = [];
+  } else if (command === 'plan') {
+    const destination = wheelPayload(context).destinations[value];
+    if (!destination || !shelf.length) throw new Error('Zielordner oder Auswahl fehlt.');
+    const reserved = new Set();
+    const items = [];
+    for (const source of shelf) {
+      const stat = await fs.promises.lstat(source);
+      const dest = path.resolve(destination.path);
+      if (stat.isDirectory() && dest.toLowerCase().startsWith(source.toLowerCase() + path.sep))
+        throw new Error('Ein Ordner kann nicht in sich selbst abgelegt werden.');
+      let target = path.join(dest, path.basename(source));
+      const parsed = path.parse(source);
+      let number = 2;
+      while (fs.existsSync(target) || reserved.has(target.toLowerCase())) {
+        target = path.join(dest, `${parsed.name} (${number++})${parsed.ext}`);
+      }
+      reserved.add(target.toLowerCase());
+      items.push({ source, target });
+    }
+    return { items, destination: destination.path };
+  } else if (command === 'copy' || command === 'move') {
+    if (!shelf.length) throw new Error('Die Dateiablage ist leer.');
+    return { ok: await quickFile(command, value, shelf), items: shelf };
+  }
+  if (wheel.isVisible()) wheel.webContents.send('context', wheelPayload(context));
+  return { items: [...shelf] };
 }
 async function perform(id, payload) {
   if (typeof id !== 'string') throw new Error('Unbekannte Aktion.');
@@ -1075,6 +1140,14 @@ if (hasSingleInstanceLock)
         hideWheel();
         showError('Aktion fehlgeschlagen', error.message);
         return false;
+      }
+    });
+    ipcMain.handle('shelf-action', async (event, command, value) => {
+      if (event.sender !== wheel.webContents) return { error: 'Nicht verfügbar.' };
+      try {
+        return await shelfAction(command, value);
+      } catch (error) {
+        return { error: error.message };
       }
     });
     ipcMain.handle('rename-preview', async (event, options) => {

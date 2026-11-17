@@ -3,14 +3,23 @@ const t = window.localize.t;
 const panel = document.getElementById('quick-panel');
 const list = document.getElementById('quick-destinations');
 const slots = [];
-const folderNewsKey = 'wheel-news-folder-insights-0.31';
-let folderNewsTimer;
-function dismissFolderNewsSoon() {
-  if (folderNewsTimer || localStorage.getItem(folderNewsKey) === 'seen') return;
-  folderNewsTimer = setTimeout(() => {
-    localStorage.setItem(folderNewsKey, 'seen');
-    document.querySelectorAll('.segment.is-new').forEach((item) => item.classList.remove('is-new'));
-  }, 5000);
+const newActions = {
+  'folder-insights': 'wheel-news-folder-insights-0.31',
+  shelf: 'wheel-news-shelf-0.32',
+};
+const newsTimers = new Map();
+function dismissActionNewsSoon(id) {
+  const key = newActions[id];
+  if (!key || newsTimers.has(id) || localStorage.getItem(key) === 'seen') return;
+  newsTimers.set(
+    id,
+    setTimeout(() => {
+      localStorage.setItem(key, 'seen');
+      document.querySelectorAll('.segment.is-new').forEach((item) => {
+        if (item.dataset.action === id) item.classList.remove('is-new');
+      });
+    }, 5000),
+  );
 }
 let current = { selected: [], destinations: [], loading: true, type: '' };
 let activePanel = '';
@@ -21,6 +30,10 @@ let expectedHash = '';
 let imageOrder = [];
 let imageSelectionKey = '';
 let imageSize = 1600;
+let shelfItems = [];
+let shelfPlan = null;
+let shelfMode = 'copy';
+let shelfDestination = -1;
 function formatBytes(bytes) {
   if (bytes < 1024) return `${bytes} B`;
   const units = ['KB', 'MB', 'GB', 'TB'];
@@ -120,9 +133,10 @@ function createSlot(index) {
   button.addEventListener('click', async (event) => {
     event.stopPropagation();
     if (button.disabled) return;
-    if (button.dataset.action === 'folder-insights') dismissFolderNewsSoon();
+    dismissActionNewsSoon(button.dataset.action);
     if (button.dataset.submenu) {
       activePanel = button.dataset.submenu;
+      if (activePanel === 'shelf') await loadShelf();
       renderPanel();
       panel.hidden = false;
       return;
@@ -132,11 +146,145 @@ function createSlot(index) {
     if (!succeeded) button.classList.remove('activated');
   });
   button.addEventListener('mouseleave', () => {
-    if (button.dataset.action === 'folder-insights') dismissFolderNewsSoon();
+    dismissActionNewsSoon(button.dataset.action);
   });
 
   box.append(button);
   slots.push({ button, spoke, icon, label });
+}
+
+async function loadShelf() {
+  const result = await window.app.shelfAction('list');
+  if (result.error) throw new Error(result.error);
+  shelfItems = result.items;
+}
+
+function shelfButton(label, icon, click, disabled = false) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'menu-action';
+  button.innerHTML = `<i class="bi ${icon}"></i><span></span>`;
+  button.querySelector('span').textContent = t(label);
+  button.disabled = disabled;
+  button.onclick = click;
+  return button;
+}
+
+function renderShelfPanel() {
+  document.getElementById('panel-title').textContent = t('Dateiablage');
+  document.getElementById('quick-count').textContent = t('{count} Elemente vorgemerkt', {
+    count: shelfItems.length,
+  });
+  document.getElementById('panel-hint').textContent = t(
+    'Dateien aus mehreren Ordnern sammeln und gemeinsam ablegen.',
+  );
+  if (activePanel === 'shelf-preview') {
+    document.getElementById('panel-title').textContent = t('Übertragung prüfen');
+    const destination = document.createElement('p');
+    destination.textContent = shelfPlan.destination;
+    destination.title = shelfPlan.destination;
+    list.append(destination);
+    for (const item of shelfPlan.items) {
+      const row = document.createElement('div');
+      row.className = 'shelf-item';
+      row.textContent = `${item.source} → ${item.target}`;
+      row.title = row.textContent;
+      list.append(row);
+    }
+    list.append(
+      shelfButton('Zurück', 'bi-arrow-left', () => {
+        activePanel = 'shelf';
+        renderPanel();
+      }),
+      shelfButton(
+        shelfMode === 'copy' ? 'Jetzt kopieren' : 'Jetzt verschieben',
+        shelfMode === 'copy' ? 'bi-copy' : 'bi-arrow-right',
+        async () => {
+          const result = await window.app.shelfAction(shelfMode, shelfDestination);
+          if (result.error) {
+            document.getElementById('panel-hint').textContent = result.error;
+          }
+        },
+      ),
+    );
+    return;
+  }
+  list.append(
+    shelfButton(
+      'Auswahl vormerken',
+      'bi-plus-lg',
+      async () => {
+        const result = await window.app.shelfAction('add');
+        if (result.error) {
+          document.getElementById('panel-hint').textContent = result.error;
+          return;
+        }
+        shelfItems = result.items;
+        renderPanel();
+      },
+      !current.selected.length || current.loading,
+    ),
+  );
+  shelfItems.forEach((item, index) => {
+    const row = document.createElement('div');
+    row.className = 'shelf-item';
+    const name = document.createElement('span');
+    name.textContent = item;
+    name.title = item;
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.title = t('Entfernen');
+    remove.innerHTML = '<i class="bi bi-x-lg"></i>';
+    remove.onclick = async () => {
+      const result = await window.app.shelfAction('remove', index);
+      shelfItems = result.items;
+      renderPanel();
+    };
+    row.append(name, remove);
+    list.append(row);
+  });
+  if (!shelfItems.length) {
+    const empty = document.createElement('p');
+    empty.textContent = t('Noch keine Dateien vorgemerkt.');
+    list.append(empty);
+    return;
+  }
+  list.append(
+    shelfButton('Ablage leeren', 'bi-trash', async () => {
+      const result = await window.app.shelfAction('clear');
+      shelfItems = result.items;
+      renderPanel();
+    }),
+  );
+  if (!current.destinations.length) {
+    const empty = document.createElement('p');
+    empty.textContent = t('Zielordner in den Einstellungen hinzufügen.');
+    list.append(empty);
+  }
+  for (const [index, entry] of current.destinations.entries()) {
+    for (const mode of ['copy', 'move']) {
+      list.append(
+        shelfButton(
+          t(mode === 'copy' ? 'Kopieren nach {folder}' : 'Verschieben nach {folder}', {
+            folder: entry.path.split(/[\\/]/).filter(Boolean).at(-1) || entry.path,
+          }),
+          mode === 'copy' ? 'bi-copy' : 'bi-arrow-right',
+          async () => {
+            const result = await window.app.shelfAction('plan', index);
+            if (result.error) {
+              document.getElementById('panel-hint').textContent = result.error;
+              return;
+            }
+            shelfPlan = result;
+            shelfDestination = index;
+            shelfMode = mode;
+            activePanel = 'shelf-preview';
+            renderPanel();
+          },
+        ),
+      );
+    }
+  }
 }
 
 function updateActions(actions) {
@@ -152,7 +300,7 @@ function updateActions(actions) {
     button.dataset.action = action.id;
     button.classList.toggle(
       'is-new',
-      action.id === 'folder-insights' && localStorage.getItem(folderNewsKey) !== 'seen',
+      !!newActions[action.id] && localStorage.getItem(newActions[action.id]) !== 'seen',
     );
     button.dataset.submenu = action.submenu || '';
     button.disabled = !action.available;
@@ -350,6 +498,11 @@ function renderPanel() {
           { count: current.selected.length },
         )
       : t('Keine Datei ausgewählt');
+
+  if (activePanel === 'shelf' || activePanel === 'shelf-preview') {
+    renderShelfPanel();
+    return;
+  }
 
   if (activePanel === 'rename') {
     renderRenamePanel();

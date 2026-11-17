@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld('app', {
   onAppDialog: (callback) => ipcRenderer.on('app-dialog', (_, data) => callback(data)),
   closeAppDialog: (index) => ipcRenderer.send('app-dialog-close', index),
   action: (id, payload) => ipcRenderer.invoke('action', id, payload),
+  shelfAction: (command, value) => ipcRenderer.invoke('shelf-action', command, value),
   renamePreview: (options) => ipcRenderer.invoke('rename-preview', options),
   renameApply: (options, expected) => ipcRenderer.invoke('rename-apply', options, expected),
   close: () => ipcRenderer.send('close-wheel'),

@@ -239,6 +239,15 @@ const ACTIONS = Object.freeze({
     category: 'files',
     context: 'explorer',
   },
+  shelf: {
+    id: 'shelf',
+    label: 'Dateiablage',
+    icon: 'bi-inboxes',
+    description: 'Dateien aus verschiedenen Ordnern sammeln',
+    category: 'files',
+    context: 'any',
+    submenu: 'shelf',
+  },
 });
 
 const CUSTOM_ACTION_IDS = Object.freeze([
@@ -266,6 +275,7 @@ const CUSTOM_ACTION_IDS = Object.freeze([
   'files:hash',
   'files:locks',
   'folder-insights',
+  'shelf',
 ]);
 
 const PROGRAM_ID = /^program:[0-9a-f-]{36}$/i;
@@ -443,7 +453,7 @@ function defaultSlotsForContext(context) {
       .concat([
         context.folder ? 'folder-insights' : null,
         'windows-tools',
-        context.destinations?.length ? 'recent-folders' : 'terminal',
+        context.shelfCount ? 'shelf' : context.destinations?.length ? 'recent-folders' : 'terminal',
         'settings',
       ]);
   }
@@ -468,7 +478,7 @@ function defaultSlotsForContext(context) {
       'file-tools',
       'smart-copy',
       canRename ? 'bulk-rename' : 'files:size',
-      'terminal',
+      'shelf',
       'settings',
     ];
   }
@@ -478,7 +488,7 @@ function defaultSlotsForContext(context) {
       'files:size',
       'smart-copy',
       'file-tools',
-      'recent-folders',
+      'shelf',
       'terminal',
       'windows-tools',
       'settings',
@@ -490,7 +500,7 @@ function defaultSlotsForContext(context) {
     images ? 'smart-copy' : 'file-tools',
     images ? 'file-tools' : context.type === '.exe' ? 'run-admin' : 'files:hash',
     images ? 'files:hash' : 'files:locks',
-    'recent-folders',
+    'shelf',
     'terminal',
     'settings',
   ];

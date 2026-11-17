@@ -37,6 +37,8 @@ The native module is built during setup. To rebuild it explicitly, run `npm run 
 
 The Standard profile adapts its actions to the selection. With no selection, saved and open Explorer folders appear directly on the wheel, alongside a scan of the current folder's largest files. A selected folder brings size and transfer actions forward; multiple files surface duplicate finding, bundling, and renaming. Image selections show sharing and PDF tools. Use the arrow buttons in the image panel to set the PDF page order before creating the file. Smart Copy appears only when files or folders are selected.
 
+The file shelf lets you collect up to 30 files or folders from different locations while WinAssistent is running. Open the wheel on a selection and choose **File shelf → Add selection**. Open it again to review the list, remove entries, and preview the destination paths before copying or moving everything to a saved or open folder. Existing names receive a numbered suffix. Successfully transferred entries leave the shelf; failed entries remain for retry. The shelf is cleared when WinAssistent exits.
+
 English is the default for new installations. German is also available. Your selected language is preserved when you update.
 
 Profiles can be exported to and imported from JSON. An export includes custom program paths, arguments, and working directories, so review it before sharing. Importing a profile does not change your hotkey or quick destinations. Save the imported profile to apply it.

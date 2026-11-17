@@ -321,5 +321,17 @@
   "Größte Dateien": "Largest files",
   "Keine Dateien gefunden.": "No files found.",
   "Kein gültiger Ordner gefunden.": "No valid folder was found.",
-  "Die Auswertung wurde nach 3.000 Einträgen begrenzt. Angaben können unvollständig sein.": "The scan stopped after 3,000 items. Results may be incomplete."
+  "Die Auswertung wurde nach 3.000 Einträgen begrenzt. Angaben können unvollständig sein.": "The scan stopped after 3,000 items. Results may be incomplete.",
+  "Dateiablage": "File shelf",
+  "Dateien aus verschiedenen Ordnern sammeln": "Collect files from different folders",
+  "Dateien aus mehreren Ordnern sammeln und gemeinsam ablegen.": "Collect files across folders and transfer them together.",
+  "{count} Elemente vorgemerkt": "{count} items on the shelf",
+  "Übertragung prüfen": "Review transfer",
+  "Jetzt kopieren": "Copy now",
+  "Jetzt verschieben": "Move now",
+  "Auswahl vormerken": "Add selection",
+  "Noch keine Dateien vorgemerkt.": "No files on the shelf yet.",
+  "Ablage leeren": "Clear shelf",
+  "Kopieren nach {folder}": "Copy to {folder}",
+  "Verschieben nach {folder}": "Move to {folder}"
 }

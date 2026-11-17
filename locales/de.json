@@ -316,5 +316,17 @@
   "Größte Dateien": "Größte Dateien",
   "Keine Dateien gefunden.": "Keine Dateien gefunden.",
   "Kein gültiger Ordner gefunden.": "Kein gültiger Ordner gefunden.",
-  "Die Auswertung wurde nach 3.000 Einträgen begrenzt. Angaben können unvollständig sein.": "Die Auswertung wurde nach 3.000 Einträgen begrenzt. Angaben können unvollständig sein."
+  "Die Auswertung wurde nach 3.000 Einträgen begrenzt. Angaben können unvollständig sein.": "Die Auswertung wurde nach 3.000 Einträgen begrenzt. Angaben können unvollständig sein.",
+  "Dateiablage": "Dateiablage",
+  "Dateien aus verschiedenen Ordnern sammeln": "Dateien aus verschiedenen Ordnern sammeln",
+  "Dateien aus mehreren Ordnern sammeln und gemeinsam ablegen.": "Dateien aus mehreren Ordnern sammeln und gemeinsam ablegen.",
+  "{count} Elemente vorgemerkt": "{count} Elemente vorgemerkt",
+  "Übertragung prüfen": "Übertragung prüfen",
+  "Jetzt kopieren": "Jetzt kopieren",
+  "Jetzt verschieben": "Jetzt verschieben",
+  "Auswahl vormerken": "Auswahl vormerken",
+  "Noch keine Dateien vorgemerkt.": "Noch keine Dateien vorgemerkt.",
+  "Ablage leeren": "Ablage leeren",
+  "Kopieren nach {folder}": "Kopieren nach {folder}",
+  "Verschieben nach {folder}": "Verschieben nach {folder}"
 }

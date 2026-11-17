@@ -156,6 +156,7 @@ async function quickFile(
   const report = {
     total: selected.length,
     completed: [],
+    completedSources: [],
     failed: [],
     totalBytes: 0,
     bytesDone: 0,
@@ -225,6 +226,7 @@ async function quickFile(
       completedBytes += copied ? currentBytes : bytes;
       currentBytes = 0;
       report.completed.push(target);
+      report.completedSources.push(source);
     } catch (error) {
       currentBytes = 0;
       if (isCancelled(error)) {

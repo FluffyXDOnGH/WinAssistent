@@ -1416,6 +1416,31 @@ h2 {
   font-size: 10px;
   margin-top: 12px;
 }
+.shelf-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-wrap: anywhere;
+  padding: 7px 4px;
+  border-bottom: 1px solid rgb(var(--c) / 0.08);
+  color: rgb(var(--c) / 0.75);
+  font-size: 11px;
+}
+.shelf-item span {
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.shelf-item button {
+  flex: none;
+  border: 0;
+  background: transparent;
+  color: rgb(var(--c) / 0.6);
+  cursor: pointer;
+}
+.shelf-item button:hover {
+  color: rgb(var(--c));
+}
 .transfer-status {
   margin: 8px 0 12px;
   padding: 10px;
