@@ -333,5 +333,7 @@
   "Noch keine Dateien vorgemerkt.": "No files on the shelf yet.",
   "Ablage leeren": "Clear shelf",
   "Kopieren nach {folder}": "Copy to {folder}",
-  "Verschieben nach {folder}": "Move to {folder}"
+  "Verschieben nach {folder}": "Move to {folder}",
+  "Desktop öffnen": "Open desktop",
+  "Desktop-Ordner öffnen": "Open the Desktop folder"
 }

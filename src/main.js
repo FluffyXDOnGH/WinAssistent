@@ -269,10 +269,18 @@ function wheelPayload(value) {
       action
         ? {
             ...action,
-            label: ['program', 'destination'].includes(action.category)
-              ? action.label
-              : translate(config.language, action.label),
-            description: translate(config.language, action.description),
+            label:
+              action.id === 'open-folder' && value.desktop
+                ? translate(config.language, 'Desktop öffnen')
+                : ['program', 'destination'].includes(action.category)
+                  ? action.label
+                  : translate(config.language, action.label),
+            description: translate(
+              config.language,
+              action.id === 'open-folder' && value.desktop
+                ? 'Desktop-Ordner öffnen'
+                : action.description,
+            ),
             reason: translate(config.language, action.reason),
             ...(action.category === 'program'
               ? { iconUrl: programIcons.get(action.file.toLowerCase()) || null }
@@ -350,8 +358,7 @@ async function showWheel(hwnd, location, hoverName = '', gestureSequence = 0) {
   if (!config.enabled) return;
   if (gestureSequence && gesture?.sequence !== gestureSequence) return;
   if (!gestureSequence) gesture = null;
-  if (typeof hwnd !== 'number')
-    hwnd = mouseBridge.desktopUnderCursor() || mouseBridge.foreground();
+  if (typeof hwnd !== 'number') hwnd = mouseBridge.desktopUnderCursor() || mouseBridge.foreground();
   const requestId = ++wheelRequestId;
   if (gestureSequence) gesture.requestId = requestId;
   await wheelReady;

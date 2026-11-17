@@ -443,6 +443,18 @@ function defaultSlotsForContext(context) {
   const selected = context.selected;
   const images = selected.length > 0 && selected.every(isSupportedImage);
   if (!selected.length) {
+    if (context.desktop) {
+      return [
+        context.destinations?.length ? 'recent-folders' : 'open-folder',
+        context.destinations?.length ? 'open-folder' : null,
+        context.shelfCount ? 'shelf' : null,
+        null,
+        context.folder ? 'folder-insights' : null,
+        'windows-tools',
+        null,
+        'settings',
+      ];
+    }
     const rank = { Zuletzt: 0, Offen: 1, Gespeichert: 2 };
     const destinations = (context.destinations || [])
       .map((entry, index) => ({ entry, index }))
